@@ -12,7 +12,7 @@ pipeline {
                   - name: jnlp
                     image: jenkins/inbound-agent:latest
                   - name: maven
-                    image: maven:3.8.6-openjdk-17
+                    image: maven:3.8-eclipse-temurin-11
                     command: ['cat']
                     tty: true
                     volumeMounts:
@@ -43,6 +43,12 @@ pipeline {
     }
     
     stages {
+        stage('Greet') {
+            steps {
+                echo "Hello, dear developer! Building API Gateway for E-commerce"
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
