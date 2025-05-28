@@ -95,8 +95,8 @@ pipeline {
             steps {
                 container('docker') {
                     script {
-                        docker.withRegistry('https://' + REGISTRY, 'docker-registry-creds') {
-                            sh "docker images"
+                        // docker.withRegistry('https://' + REGISTRY, 'docker-registry-creds') {
+                        docker.withRegistry('https://index.docker.io/v1/', 'docker-registry-creds') {
                             docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
                         }
                     }
