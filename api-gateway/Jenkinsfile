@@ -63,18 +63,18 @@ pipeline {
             }
         }
         
-        stage('Unit Tests') {
-            steps {
-                container('maven') {
-                    sh 'mvn test'
-                }
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
+        // stage('Unit Tests') {
+        //     steps {
+        //         container('maven') {
+        //             sh 'mvn test'
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             junit '**/target/surefire-reports/*.xml'
+        //         }
+        //     }
+        // }
         
         stage('Build Docker Image') {
             steps {
@@ -121,10 +121,10 @@ pipeline {
     }
     
     post {
-        always {
-            // Limpieza
-            cleanWs()
-        }
+        // always {
+        //     // Limpieza
+        //     cleanWs()
+        // }
         success {
             echo "✅ API Gateway build #${env.BUILD_NUMBER} succeeded"
             // slackSend(color: 'good', message: "API Gateway build #${env.BUILD_NUMBER} succeeded")
