@@ -28,7 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderItemResource {
 	
 	private final OrderItemService orderItemService;
-	
+	@GetMapping("/health")
+	public ResponseEntity<String> health() {
+		return ResponseEntity.ok("Shipping Service is up and running!");
+	}
+
 	@GetMapping
 	public ResponseEntity<DtoCollectionResponse<OrderItemDto>> findAll() {
 		log.info("*** OrderItemDto List, controller; fetch all orderItems *");
