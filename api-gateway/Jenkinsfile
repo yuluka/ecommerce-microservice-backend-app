@@ -126,10 +126,12 @@ pipeline {
             cleanWs()
         }
         success {
-            slackSend(color: 'good', message: "API Gateway build #${env.BUILD_NUMBER} succeeded")
+            echo "✅ API Gateway build #${env.BUILD_NUMBER} succeeded"
+            // slackSend(color: 'good', message: "API Gateway build #${env.BUILD_NUMBER} succeeded")
         }
         failure {
-            slackSend(color: 'danger', message: "API Gateway build #${env.BUILD_NUMBER} failed")
+            echo "❌ API Gateway build #${env.BUILD_NUMBER} failed"
+            // slackSend(color: 'danger', message: "API Gateway build #${env.BUILD_NUMBER} failed")
         }
     }
 }
