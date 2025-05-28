@@ -25,6 +25,10 @@ pipeline {
                     volumeMounts:
                     - name: docker-sock
                       mountPath: /var/run/docker.sock
+                  - name: kubectl
+                    image: bitnami/kubectl:latest
+                    command: ['cat']
+                    tty: true
                   volumes:
                   - name: maven-cache
                     emptyDir: {}
@@ -106,7 +110,7 @@ pipeline {
         
         stage('Deploy to Dev Kubernetes') {
             steps {
-                container('docker') {
+                container('kubectl') {
                     script {
                         // Asegurarse que el namespace existe
                         sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
