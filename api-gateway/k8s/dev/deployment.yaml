@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: docker.io/raskolnikov999/ecommerce/api-gateway:latest
+        image: raskolnikov999/ingesoftv-taller2-ecommerce-apigateway
         ports:
         - containerPort: 8080
         env:
