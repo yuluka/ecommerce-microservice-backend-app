@@ -1,0 +1,129 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                metadata:
+                  labels:
+                    app: jenkins-agent
+                spec:
+                  containers:
+                  - name: jnlp
+                    image: jenkins/inbound-agent:latest
+                  - name: maven
+                    image: maven:3.8.6-openjdk-17
+                    command: ['cat']
+                    tty: true
+                    volumeMounts:
+                    - name: maven-cache
+                      mountPath: /root/.m2
+                  - name: docker
+                    image: docker:20.10.23
+                    command: ['cat']
+                    tty: true
+                    volumeMounts:
+                    - name: docker-sock
+                      mountPath: /var/run/docker.sock
+                  volumes:
+                  - name: maven-cache
+                    emptyDir: {}
+                  - name: docker-sock
+                    hostPath:
+                      path: /var/run/docker.sock
+            '''
+        }
+    }
+    
+    environment {
+        REGISTRY = 'docker.io/raskolnikov999'
+        IMAGE_NAME = "${REGISTRY}/ecommerce/api-gateway"
+        KUBE_NAMESPACE = "ecommerce-dev"
+        KUBE_CONFIG = credentials('kubeconfig-dev')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Build with Maven') {
+            steps {
+                container('maven') {
+                    sh 'mvn clean package -DskipTests' // Temporalmente saltamos tests para construcción inicial
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                container('maven') {
+                    sh 'mvn test'
+                }
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    script {
+                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+                container('docker') {
+                    script {
+                        docker.withRegistry('https://' + REGISTRY, 'docker-registry-creds') {
+                            docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Dev Kubernetes') {
+            steps {
+                container('docker') {
+                    script {
+                        // Asegurarse que el namespace existe
+                        sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
+                        
+                        // Actualizar la imagen en el deployment
+                        sh """
+                            kubectl set image deployment/api-gateway api-gateway=${IMAGE_NAME}:${env.BUILD_NUMBER} \
+                            --namespace=${KUBE_NAMESPACE} --record || \
+                            kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
+                        """
+                        
+                        // Esperar a que el despliegue esté listo
+                        sh "kubectl rollout status deployment/api-gateway --namespace=${KUBE_NAMESPACE}"
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Limpieza
+            cleanWs()
+        }
+        success {
+            slackSend(color: 'good', message: "API Gateway build #${env.BUILD_NUMBER} succeeded")
+        }
+        failure {
+            slackSend(color: 'danger', message: "API Gateway build #${env.BUILD_NUMBER} failed")
+        }
+    }
+}
