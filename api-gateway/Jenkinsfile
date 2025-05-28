@@ -57,8 +57,11 @@ pipeline {
         
         stage('Build with Maven') {
             steps {
-                dir('api-gateway') {
-                    sh 'mvn clean package -DskipTests' // Generar el JAR en target/
+                container('maven') {
+                    dir('api-gateway') {
+                        sh 'mvn --version' // Verificar la versión de Maven
+                        sh 'mvn clean package -DskipTests' // Generar el JAR en target/
+                    }
                 }
             }
         }
