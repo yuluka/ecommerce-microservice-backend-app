@@ -80,7 +80,8 @@ pipeline {
             steps {
                 container('docker') {
                     script {
-                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "api-gateway") // Construir imagen Docker tomando el Dockerfile en el directorio api-gateway
+                        echo "Docker image built: ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     }
                 }
             }
