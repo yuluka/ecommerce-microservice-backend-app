@@ -1,0 +1,150 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                metadata:
+                  labels:
+                    app: jenkins-agent
+                spec:
+                  containers:
+                  - name: jnlp
+                    image: jenkins/inbound-agent:latest
+                  - name: maven
+                    image: maven:3.8.7-eclipse-temurin-11
+                    command: ['cat']
+                    tty: true
+                    volumeMounts:
+                    - name: maven-cache
+                      mountPath: /root/.m2
+                  - name: docker
+                    image: docker:20.10.23
+                    command: ['cat']
+                    tty: true
+                    volumeMounts:
+                    - name: docker-sock
+                      mountPath: /var/run/docker.sock
+                  - name: kubectl
+                    image: lachlanevenson/k8s-kubectl:latest
+                    command: ['cat']
+                    tty: true
+                  volumes:
+                  - name: maven-cache
+                    emptyDir: {}
+                  - name: docker-sock
+                    hostPath:
+                      path: /var/run/docker.sock
+            '''
+        }
+    }
+    
+    environment {
+        DOCKER_USERNAME = 'raskolnikov999'
+        REGISTRY = "docker.io/${DOCKER_USERNAME}"
+        IMAGE_NAME = "${DOCKER_USERNAME}/ingesoftv-taller2-ecommerce-proxyclient"
+        KUBE_NAMESPACE = "ecommerce-dev"
+        KUBE_CONFIG = credentials('kubeconfig-dev')
+    }
+    
+    stages {
+        stage('Greet') {
+            steps {
+                echo "👋 Starting build for Proxy Client microservice. Build number: ${env.BUILD_NUMBER}"
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Build with Maven') {
+            steps {
+                container('maven') {
+                    dir('proxy-client') {
+                        sh 'mvn --version' // Verificar la versión de Maven
+                        sh 'mvn clean package -DskipTests' // Generar el JAR en target/
+                    }
+                }
+            }
+        }
+        
+        // stage('Unit Tests') {
+        //     steps {
+        //         container('maven') {
+        //             sh 'mvn test'
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             junit '**/target/surefire-reports/*.xml'
+        //         }
+        //     }
+        // }
+        
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    script {
+                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "proxy-client") // Construir imagen Docker tomando el Dockerfile en el directorio proxy-client
+                        echo "Docker image built: ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+                container('docker') {
+                    script {
+                        docker.withRegistry('https://index.docker.io/v1/', 'docker-registry-creds') {
+                            docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Dev Kubernetes') {
+            steps {
+                container('kubectl') {
+                    dir('proxy-client') {
+                        script {
+                            // Asegurarse que el namespace existe
+                            sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
+                            
+                            // Actualizar la imagen en el deployment
+                            sh """
+                                kubectl set image deployment/proxy-client proxy-client=${IMAGE_NAME}:${env.BUILD_NUMBER} \
+                                --namespace=${KUBE_NAMESPACE} --record || \
+                                kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
+
+                                kubectl apply -f k8s/dev/service.yaml --namespace=${KUBE_NAMESPACE}
+                            """
+                            
+                            // Esperar a que el despliegue esté listo
+                            sh "kubectl rollout status deployment/proxy-client --namespace=${KUBE_NAMESPACE}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Limpieza
+            cleanWs()
+        }
+        success {
+            echo "✅ Proxy Client build #${env.BUILD_NUMBER} succeeded"
+            // slackSend(color: 'good', message: "Proxy Client build #${env.BUILD_NUMBER} succeeded")
+        }
+        failure {
+            echo "❌ Proxy Client build #${env.BUILD_NUMBER} failed"
+            // slackSend(color: 'danger', message: "Proxy Client build #${env.BUILD_NUMBER} failed")
+        }
+    }
+}

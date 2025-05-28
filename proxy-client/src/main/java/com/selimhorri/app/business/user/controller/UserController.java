@@ -23,6 +23,11 @@ public class UserController {
 	
 	private final UserClientService userClientService;
 	
+	@GetMapping("/health")
+	public ResponseEntity<String> health() {
+		return ResponseEntity.ok("User Service is up and running!");
+	}
+	
 	@GetMapping
 	public ResponseEntity<UserUserServiceCollectionDtoResponse> findAll() {
 		return ResponseEntity.ok(this.userClientService.findAll().getBody());
