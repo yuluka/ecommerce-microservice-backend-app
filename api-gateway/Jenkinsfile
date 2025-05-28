@@ -111,19 +111,21 @@ pipeline {
         stage('Deploy to Dev Kubernetes') {
             steps {
                 container('kubectl') {
-                    script {
-                        // Asegurarse que el namespace existe
-                        sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
-                        
-                        // Actualizar la imagen en el deployment
-                        sh """
-                            kubectl set image deployment/api-gateway api-gateway=${IMAGE_NAME}:${env.BUILD_NUMBER} \
-                            --namespace=${KUBE_NAMESPACE} --record || \
-                            kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
-                        """
-                        
-                        // Esperar a que el despliegue esté listo
-                        sh "kubectl rollout status deployment/api-gateway --namespace=${KUBE_NAMESPACE}"
+                    dir('api-gateway') {
+                        script {
+                            // Asegurarse que el namespace existe
+                            sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
+                            
+                            // Actualizar la imagen en el deployment
+                            sh """
+                                kubectl set image deployment/api-gateway api-gateway=${IMAGE_NAME}:${env.BUILD_NUMBER} \
+                                --namespace=${KUBE_NAMESPACE} --record || \
+                                kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
+                            """
+                            
+                            // Esperar a que el despliegue esté listo
+                            sh "kubectl rollout status deployment/api-gateway --namespace=${KUBE_NAMESPACE}"
+                        }
                     }
                 }
             }
