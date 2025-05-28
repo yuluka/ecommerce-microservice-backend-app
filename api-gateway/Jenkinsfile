@@ -121,6 +121,8 @@ pipeline {
                                 kubectl set image deployment/api-gateway api-gateway=${IMAGE_NAME}:${env.BUILD_NUMBER} \
                                 --namespace=${KUBE_NAMESPACE} --record || \
                                 kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
+
+                                kubectl apply -f k8s/dev/service.yaml --namespace=${KUBE_NAMESPACE}
                             """
                             
                             // Esperar a que el despliegue esté listo
@@ -133,10 +135,10 @@ pipeline {
     }
     
     post {
-        // always {
-        //     // Limpieza
-        //     cleanWs()
-        // }
+        always {
+            // Limpieza
+            cleanWs()
+        }
         success {
             echo "✅ API Gateway build #${env.BUILD_NUMBER} succeeded"
             // slackSend(color: 'good', message: "API Gateway build #${env.BUILD_NUMBER} succeeded")
