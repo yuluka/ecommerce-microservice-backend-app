@@ -36,7 +36,7 @@ pipeline {
     }
     
     environment {
-        REGISTRY = 'docker.io/raskolnikov999'
+        REGISTRY = 'raskolnikov999'
         IMAGE_NAME = "${REGISTRY}/ingesoftv-taller2-ecommerce-apigateway"
         KUBE_NAMESPACE = "ecommerce-dev"
         KUBE_CONFIG = credentials('kubeconfig-dev')
