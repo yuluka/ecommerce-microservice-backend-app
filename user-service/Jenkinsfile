@@ -42,7 +42,7 @@ pipeline {
     environment {
         DOCKER_USERNAME = 'raskolnikov999'
         REGISTRY = "docker.io/${DOCKER_USERNAME}"
-        IMAGE_NAME = "${DOCKER_USERNAME}/ingesoftv-taller2-ecommerce-cloudconfig"
+        IMAGE_NAME = "${DOCKER_USERNAME}/ingesoftv-taller2-ecommerce-userservice"
         KUBE_NAMESPACE = "ecommerce-dev"
         KUBE_CONFIG = credentials('kubeconfig-dev')
     }
@@ -50,7 +50,7 @@ pipeline {
     stages {
         stage('Greet') {
             steps {
-                echo "👋 Starting build for Cloud Config microservice. Build number: ${env.BUILD_NUMBER}"
+                echo "👋 Starting build for User Service microservice. Build number: ${env.BUILD_NUMBER}"
             }
         }
 
@@ -63,7 +63,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 container('maven') {
-                    dir('cloud-config') {
+                    dir('user-service') {
                         sh 'mvn --version' // Verificar la versión de Maven
                         sh 'mvn clean package -DskipTests' // Generar el JAR en target/
                     }
@@ -88,7 +88,7 @@ pipeline {
             steps {
                 container('docker') {
                     script {
-                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "cloud-config") // Construir imagen Docker tomando el Dockerfile en el directorio cloud-config
+                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "user-service") // Construir imagen Docker tomando el Dockerfile en el directorio user-service
                         echo "Docker image built: ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     }
                 }
@@ -110,14 +110,14 @@ pipeline {
         stage('Deploy to Dev Kubernetes') {
             steps {
                 container('kubectl') {
-                    dir('cloud-config') {
+                    dir('user-service') {
                         script {
                             // Asegurarse que el namespace existe
                             sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
                             
                             // Actualizar la imagen en el deployment
                             sh """
-                                kubectl set image deployment/cloud-config cloud-config=${IMAGE_NAME}:${env.BUILD_NUMBER} \
+                                kubectl set image deployment/user-service user-service=${IMAGE_NAME}:${env.BUILD_NUMBER} \
                                 --namespace=${KUBE_NAMESPACE} --record || \
                                 kubectl apply -f k8s/dev/deployment.yaml --namespace=${KUBE_NAMESPACE}
 
@@ -125,7 +125,7 @@ pipeline {
                             """
                             
                             // Esperar a que el despliegue esté listo
-                            sh "kubectl rollout status deployment/cloud-config --namespace=${KUBE_NAMESPACE}"
+                            sh "kubectl rollout status deployment/user-service --namespace=${KUBE_NAMESPACE}"
                         }
                     }
                 }
@@ -139,12 +139,12 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "✅ Cloud Config build #${env.BUILD_NUMBER} succeeded"
-            // slackSend(color: 'good', message: "Cloud Config build #${env.BUILD_NUMBER} succeeded")
+            echo "✅ User Service build #${env.BUILD_NUMBER} succeeded"
+            // slackSend(color: 'good', message: "User Service build #${env.BUILD_NUMBER} succeeded")
         }
         failure {
-            echo "❌ Cloud Config build #${env.BUILD_NUMBER} failed"
-            // slackSend(color: 'danger', message: "Cloud Config build #${env.BUILD_NUMBER} failed")
+            echo "❌ User Service build #${env.BUILD_NUMBER} failed"
+            // slackSend(color: 'danger', message: "User Service build #${env.BUILD_NUMBER} failed")
         }
     }
 }

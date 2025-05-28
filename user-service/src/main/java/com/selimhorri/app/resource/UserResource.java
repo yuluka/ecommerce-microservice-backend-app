@@ -29,6 +29,12 @@ public class UserResource {
 	
 	private final UserService userService;
 	
+	@GetMapping("/health")
+	public ResponseEntity<String> health() {
+		log.info("*** String, resource; health check *");
+		return ResponseEntity.ok("User Service is up and running!");
+	}
+
 	@GetMapping
 	public ResponseEntity<DtoCollectionResponse<UserDto>> findAll() {
 		log.info("*** UserDto List, controller; fetch all users *");
