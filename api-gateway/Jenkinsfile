@@ -26,8 +26,8 @@ pipeline {
                     - name: docker-sock
                       mountPath: /var/run/docker.sock
                   - name: kubectl
-                    image: bitnami/kubectl:1.28
-                    command: ['sh', '-c', 'cat']
+                    image: lachlanevenson/k8s-kubectl:v1.28.0
+                    command: ['cat']
                     tty: true
                   volumes:
                   - name: maven-cache
