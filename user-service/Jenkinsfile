@@ -112,6 +112,13 @@ pipeline {
                 container('kubectl') {
                     dir('user-service') {
                         script {
+                            // Verificar que service-discovery esté disponible
+                            sh """
+                                kubectl wait --namespace=${KUBE_NAMESPACE} \
+                                --for=condition=available deployment/service-discovery \
+                                --timeout=120s
+                            """
+
                             // Asegurarse que el namespace existe
                             sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
                             
@@ -125,7 +132,13 @@ pipeline {
                             """
                             
                             // Esperar a que el despliegue esté listo
-                            sh "kubectl rollout status deployment/user-service --namespace=${KUBE_NAMESPACE}"
+                            sh "kubectl rollout status deployment/user-service --namespace=${KUBE_NAMESPACE} --timeout=300s"
+
+                            // Verificar registro en Eureka
+                            sh """
+                                kubectl exec deployment/user-service --namespace=${KUBE_NAMESPACE} -- \
+                                curl -s http://service-discovery.ecommerce-dev.svc.cluster.local:8761/eureka/apps/USER-SERVICE | grep -q UP
+                            """
                         }
                     }
                 }
