@@ -15,6 +15,13 @@ pipeline {
                     image: maven:3.8.7-eclipse-temurin-11
                     command: ['cat']
                     tty: true
+                    resources:
+                      limits:
+                        memory: "2Gi"
+                        cpu: "1"
+                      requests:
+                        memory: "1Gi"
+                        cpu: "500m"
                     volumeMounts:
                     - name: maven-cache
                       mountPath: /root/.m2
