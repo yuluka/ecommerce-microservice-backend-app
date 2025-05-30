@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: product-service
+  namespace: ecommerce-dev
 spec:
   replicas: 1
   selector:
@@ -15,12 +16,19 @@ spec:
       containers:
       - name: product-service
         image: raskolnikov999/ingesoftv-taller2-ecommerce-productservice
+        imagePullPolicy: Always
         ports:
         - containerPort: 8500
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://service-discovery:8761/eureka"
+          value: "http://service-discovery.ecommerce-dev.svc.cluster.local:8761/eureka" # Use the service name and namespace for internal communication
+        - name: SPRING_CONFIG_IMPORT
+          value: "http://cloud-config.ecommerce-dev.svc.cluster.local:8888"
         - name: CONFIG_SERVER_URI
-          value: "http://cloud-config:8888"
+          value: "http://cloud-config.ecommerce-dev.svc.cluster.local:8888"  # FQDN completo
+        - name: SPRING_APPLICATION_NAME
+          value: "user-service"
+        - name: SPRING_CLOUD_CONFIG_ENABLED
+          value: "true"

@@ -15,6 +15,13 @@ pipeline {
                     image: maven:3.8.7-eclipse-temurin-11
                     command: ['cat']
                     tty: true
+                    resources:
+                      limits:
+                        memory: "2Gi"
+                        cpu: "1"
+                      requests:
+                        memory: "1Gi"
+                        cpu: "500m"
                     volumeMounts:
                     - name: maven-cache
                       mountPath: /root/.m2
@@ -112,6 +119,13 @@ pipeline {
                 container('kubectl') {
                     dir('product-service') {
                         script {
+                            // Verificar que service-discovery esté disponible
+                            sh """
+                                kubectl wait --namespace=${KUBE_NAMESPACE} \
+                                --for=condition=available deployment/service-discovery \
+                                --timeout=120s
+                            """
+
                             // Asegurarse que el namespace existe
                             sh "kubectl create namespace ${KUBE_NAMESPACE} || true"
                             
@@ -125,7 +139,13 @@ pipeline {
                             """
                             
                             // Esperar a que el despliegue esté listo
-                            sh "kubectl rollout status deployment/product-service --namespace=${KUBE_NAMESPACE}"
+                            sh "kubectl rollout status deployment/product-service --namespace=${KUBE_NAMESPACE} --timeout=300s"
+
+                            // Verificar registro en Eureka
+                            sh """
+                                kubectl exec deployment/product-service --namespace=${KUBE_NAMESPACE} -- \
+                                curl -s http://service-discovery.ecommerce-dev.svc.cluster.local:8761/eureka/apps/PRODUCT-SERVICE | grep -q UP
+                            """
                         }
                     }
                 }
