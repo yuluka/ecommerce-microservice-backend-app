@@ -29,6 +29,6 @@ spec:
         - name: CONFIG_SERVER_URI
           value: "http://cloud-config.ecommerce-dev.svc.cluster.local:8888"
         - name: SPRING_APPLICATION_NAME
-          value: "user-service"
+          value: "cloud-config"
         - name: SPRING_CLOUD_CONFIG_ENABLED
           value: "true"
