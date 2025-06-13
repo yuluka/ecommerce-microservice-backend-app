@@ -1,3 +1,4 @@
+
 server:
   servlet:
     context-path: /shipping-service
@@ -12,13 +13,6 @@ spring:
   profiles:
     active:
     - dev
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://lamadrequemepario:8761/eureka}
-    register-with-eureka: true
-    fetch-registry: true
 
 resilience4j:
   circuitbreaker:

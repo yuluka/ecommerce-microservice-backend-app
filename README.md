@@ -1,621 +1,2483 @@
-# e-Commerce-boot μServices 
+# Notas: IngesoftV Taller 2
 
-## Important Note: This project's new milestone is to move The whole system to work on Kubernetes, so stay tuned.
+## Tabla de contenido
 
-<!--## Better Code Hub
-I analysed this repository according to the clean code standards on [Better Code Hub](https://bettercodehub.com/) just to get an independent opinion of how bad the code is. Surprisingly, the compliance score is high!
--->
-## Introduction
-- This project is a development of a small set of **Spring Boot** and **Cloud** based Microservices projects that implement cloud-native intuitive, Reactive Programming, Event-driven, Microservices design patterns, and coding best practices.
-- The project follows **CloudNative**<!--(https://www.cncf.io/)--> recommendations and The [**twelve-factor app**](https://12factor.net/) methodology for building *software-as-a-service apps* to show how μServices should be developed and deployed.
-- This project uses cutting edge technologies like Docker, Kubernetes, Elasticsearch Stack for
- logging and monitoring, Java SE 11, H2, and MySQL databases, all components developed with TDD in mind, covering integration & performance testing, and many more.
- - This project is going to be developed as stages, and all such stage steps are documented under
-  the project **e-Commerce-boot μServices** **README** file <!--[wiki page](https://github.com/mohamed-taman/Springy-Store-Microservices/wiki)-->.
----
-## Getting started
-### System components Structure
-Let's explain first the system structure to understand its components:
-```
-ecommerce-microservice-backend-app [μService] --> Parent folder.
-|- docs --> All docs and diagrams.
-|- k8s --> All **Kubernetes** config files.
-    |- proxy-client --> Authentication & Authorization µService, exposing all 
-    |- api-gateway --> API Gateway server
-    |- service-discovery --> Service Registery server
-    |- cloud-config --> Centralized Configuration server
-    |- user-service --> Manage app users (customers & admins) as well as their credentials
-    |- product-service --> Manage app products and their respective categories
-    |- favourite-service --> Manage app users' favourite products added to their own favourite list
-    |- order-service --> Manage app orders based on carts
-    |- shipping-service --> Manage app order-shipping products
-    |- payment-service --> Manage app order payments
-|- compose.yml --> contains all services landscape with Kafka  
-|- run-em-all.sh --> Run all microservices in separate mode. 
-|- setup.sh --> Install all shared POMs and shared libraries. 
-|- stop-em-all.sh --> Stop all services runs in standalone mode. 
-|- test-em-all.sh --> This will start all docker compose landscape and test them, then shutdown docker compose containers with test finishes (use switch start stop)
-```
-Now, as we have learned about different system components, then let's start.
+- [Notas: IngesoftV Taller 2](#notas-ingesoftv-taller-2)
+  - [Microservicios](#microservicios)
+  - [Punto 1: Configuración](#punto-1-configuración)
+    - [Jenkins](#jenkins)
+    - [Docker](#docker)
+    - [Kubernetes](#kubernetes)
+      - [Minikube](#minikube)
+      - [AKS](#aks)
+    - [Helm](#helm)
+  - [Punto 2: Pipeline para `dev`](#punto-2-pipeline-para-dev)
+    - [Pipeline](#pipeline)
+    - [Eureka](#eureka)
+  - [Punto 3: Pruebas](#punto-3-pruebas)
+    - [Pruebas Unitarias](#pruebas-unitarias)
+      - [Servicio: user-service](#servicio-user-service)
+      - [Servicio: product-service](#servicio-product-service)
+    - [Pruebas de Integración](#pruebas-de-integración)
+      - [Servicio: user-service](#servicio-user-service-1)
+      - [Servicio: product-service](#servicio-product-service-1)
+    - [Pruebas End2End](#pruebas-end2end)
+    - [Pruebas de estrés](#pruebas-de-estrés)
+  - [Punto 4: Pipeline de stage](#punto-4-pipeline-de-stage)
+  - [Punto 5: Pipeline de master](#punto-5-pipeline-de-master)
+- [Notas: Proyecto final](#notas-proyecto-final)
+  - [Punto 1: Metodología Ágil y Estrategia de Branching](#punto-1-metodología-ágil-y-estrategia-de-branching)
+    - [Metodología y sistema de gestión](#metodología-y-sistema-de-gestión)
+    - [Estrategia de branching](#estrategia-de-branching)
+  - [Punto 2: Infraestructura como Código con Terraform](#punto-2-infraestructura-como-código-con-terraform)
+    - [Infraestructura implementada](#infraestructura-implementada)
+    - [Costos de la infraestructura](#costos-de-la-infraestructura)
+  - [Punto 3: Patrones de Diseño](#punto-3-patrones-de-diseño)
+    - [Patrones de diseño usados en la arquitectura existente](#patrones-de-diseño-usados-en-la-arquitectura-existente)
+      - [API Gateway](#api-gateway)
+      - [Externalized Configuration](#externalized-configuration)
+      - [Circuit Breaker](#circuit-breaker)
+      - [Centralized Logging/Tracing](#centralized-loggingtracing)
+      - [Profiles / Environment Separation](#profiles--environment-separation)
+      - [Service Discovery](#service-discovery)
+      - [Health Check](#health-check)
+    - [Patrones propios](#patrones-propios)
+      - [**Resiliencia: Retry**](#resiliencia-retry)
+      - [Configuración: Feature Toggle](#configuración-feature-toggle)
+      - [Resiliencia: Timeout](#resiliencia-timeout)
+  - [Punto 4: CI/CD Avanzado](#punto-4-cicd-avanzado)
+    - [Pipelines](#pipelines)
+    - [Ambientes separados](#ambientes-separados)
+    - [SonarQube](#sonarqube)
+    - [Trivy](#trivy)
+    - [Versionado semántico automático](#versionado-semántico-automático)
+    - [Notificaciones de falles automáticas](#notificaciones-de-falles-automáticas)
+    - [Aprobaciones para despliegues a producción](#aprobaciones-para-despliegues-a-producción)
+  - [Punto 5: Pruebas Completas](#punto-5-pruebas-completas)
+    - [Pruebas de seguridad](#pruebas-de-seguridad)
+    - [Informes de cobertura y calidad de pruebas](#informes-de-cobertura-y-calidad-de-pruebas)
+    - [Ejecución automatizada en pipelines](#ejecución-automatizada-en-pipelines)
+  - [Punto 6: Change Management y Release Notes](#punto-6-change-management-y-release-notes)
+    - [Generación automática de Release Notes](#generación-automática-de-release-notes)
+  - [Punto 7: Observabilidad y Monitoreo](#punto-7-observabilidad-y-monitoreo)
+  - [Punto 8: Seguridad](#punto-8-seguridad)
+  - [Punto 9: Documentación y Presentación](#punto-9-documentación-y-presentación)
 
-### System Boundary *Architecture* - μServices Landscape
+## Microservicios
 
-![System Boundary](app-architecture.drawio.png)
+Hay que escoger, al menos, 6 microservicios **(que se comuniquen entre ellos)** para el desarrollo del taller.
 
-### Required software
+El [proyecto](https://github.com/yuluka/ecommerce-microservice-backend-app) contiene 10 microservicios. Estos son:
 
-The following are the initially required software pieces:
+1. api-gateway
+2. cloud-config
+3. favourite-service
+4. order-service
+5. payment-service
+6. product-service
+7. proxy-client
+8. service-discovery
+9. shipping-service
+10. user-service
 
-1. **Java 11**: JDK 11 LTS can be downloaded and installed from https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html
+  
 
-1. **Git**: it can be downloaded and installed from https://git-scm.com/downloads
+Para nuestra solución, **voy a escoger los siguientes**:
 
-1. **Maven**: Apache Maven is a software project management and comprehension tool, it can be downloaded from here https://maven.apache.org/download.cgi
+1. api-gateway
+2. cloud-config
+3. favourite-service
+4. order-service
+5. payment-service
+6. product-service
+7. proxy-client
+8. service-discovery
+9. shipping-service
+10. user-service
 
-1. **curl**: this command-line tool for testing HTTP-based APIs can be downloaded and installed from https://curl.haxx.se/download.html
+  
 
-1. **jq**: This command-line JSON processor can be downloaded and installed from https://stedolan.github.io/jq/download/
+Así es. Decidimos hacer el trabajo con todos los microservivios porque somos unos capos.
 
-1. **Spring Boot Initializer**: This *Initializer* generates *spring* boot project with just what you need to start quickly! Start from here https://start.spring.io/
+  
 
-1. **Docker**: The fastest way to containerize applications on your desktop, and you can download it from here [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+## Punto 1: Configuración
 
-1. **Kubernetes**: We can install **minikube** for testing puposes https://minikube.sigs.k8s.io/docs/start/
+Hay que hacer varias cosas para hacer este taller. Primero, hay que tener en cuenta que este taller se debería hacer en local, y no en Azure como siempre. El problema con este enfoque, es que se necesita como un PC de la NASA para poder hacer la ejecución de todo el proyecto.
 
-   > For each future stage, I will list the newly required software. 
+En vista de esta situación, decidimos hacer la solución en Azure.
 
-Follow the installation guide for each software website link and check your software versions from the command line to verify that they are all installed correctly.
+La idea del taller es hacer que le proyecto es definir un conjunto de pruebas que se ejecuten antes de hacer el despliegue.
 
-## Using an IDE
+  
 
-I recommend that you work with your Java code using an IDE that supports the development of Spring Boot applications such as Spring Tool Suite or IntelliJ IDEA Ultimate Edition. So you can use the Spring Boot Dashboard to run the services, run each microservice test case, and many more.
+### Jenkins
 
-All that you want to do is just fire up your IDE **->** open or import the parent folder `ecommerce-microservice-backend-app`, and everything will be ready for you.
+Jenkins es la herramienta que usaremos para la ejecución de los pipelines. En lugar de definirlos en Actions de GitHub, pues irán acá.
 
-## Data Model
-### Entity-Relationship-Diagram
-![System Boundary](ecommerce-ERD.drawio.png)
+  
 
-## Playing With e-Commerce-boot Project
-
-### Cloning It
-
-The first thing to do is to open **git bash** command line, and then simply you can clone the project under any of your favorite places as the following:
-
-```bash
-> git clone https://github.com/SelimHorri/ecommerce-microservice-backend-app.git
-```
-
-### Build & Test Them In Isolation
-
-To build and run the test cases for each service & shared modules in the project, we need to do the following:
-
-#### Build & Test µServices
-Now it is the time to build our **10 microservices** and run each service integration test in
- isolation by running the following commands:
-
-```bash
-selim@:~/ecommerce-microservice-backend-app$ ./mvnw clean package 
-```
-
-All build commands and test suite for each microservice should run successfully, and the final output should be like this:
-
-```bash
----------------< com.selimhorri.app:ecommerce-microservice-backend >-----------
-[INFO] ------------------------------------------------------------------------
-[INFO] Reactor Summary for ecommerce-microservice-backend 0.1.0:
-[INFO] 
-[INFO] ecommerce-microservice-backend ..................... SUCCESS [  0.548 s]
-[INFO] service-discovery .................................. SUCCESS [  3.126 s]
-[INFO] cloud-config ....................................... SUCCESS [  1.595 s]
-[INFO] api-gateway ........................................ SUCCESS [  1.697 s]
-[INFO] proxy-client ....................................... SUCCESS [  3.632 s]
-[INFO] user-service ....................................... SUCCESS [  2.546 s]
-[INFO] product-service .................................... SUCCESS [  2.214 s]
-[INFO] favourite-service .................................. SUCCESS [  2.072 s]
-[INFO] order-service ...................................... SUCCESS [  2.241 s]
-[INFO] shipping-service ................................... SUCCESS [  2.197 s]
-[INFO] payment-service .................................... SUCCESS [  2.006 s]
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  24.156 s
-[INFO] Finished at: 2021-12-29T19:52:57+01:00
-[INFO] ------------------------------------------------------------------------
-```
-
-### Running Them All
-Now it's the time to run all of our Microservices, and it's straightforward just run the following `docker-compose` commands:
+Para la utilización de Jenkins, lo montaremos sobre un contenedor de Docker en local. El **comando** para esto es:
 
 ```bash
-selim@:~/ecommerce-microservice-backend-app$ docker-compose -f compose.yml up
+docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v jenkins_data:/var/jenkins_home jenkins/jenkins:lts
 ```
 
-All the **services**, **databases**, and **messaging service** will run in parallel in detach mode (option `-d`), and command output will print to the console the following:
+  
 
-```bash
-Creating network "ecommerce-microservice-backend-app_default" with the default driver
-Creating ecommerce-microservice-backend-app_api-gateway-container_1       ... done
-Creating ecommerce-microservice-backend-app_favourite-service-container_1 ... done
-Creating ecommerce-microservice-backend-app_service-discovery-container_1 ... done
-Creating ecommerce-microservice-backend-app_shipping-service-container_1  ... done
-Creating ecommerce-microservice-backend-app_order-service-container_1     ... done
-Creating ecommerce-microservice-backend-app_user-service-container_1      ... done
-Creating ecommerce-microservice-backend-app_payment-service-container_1   ... done
-Creating ecommerce-microservice-backend-app_product-service-container_1   ... done
-Creating ecommerce-microservice-backend-app_proxy-client-container_1      ... done
-Creating ecommerce-microservice-backend-app_zipkin-container_1            ... done
-Creating ecommerce-microservice-backend-app_cloud-config-container_1      ... done
+En este comando:
+
+*   `docker run` lanza un nuevo contenedor desde una imagen (`jenkins/jenkins:lts`).
+*   `-d` hace que la ejecución se haga en segundo plano y no me bloquee la terminal.
+*   `--name jenkins` es la forma de asignarle el nombre al contenedor. Lo que hice fue crear un contenedor que se llama "jenkins".
+*   `-p 8080:8080` mapea el puerto 8080 del contenedor al puerto 8080 de mi máquina.
+*   `-p 50000:50000` mapea el puerto 50000 del contenedor al 50000 de mi máquina. Este puerto sirve para la comunicación con agentes remotos (no es necesario por ahora, pero es buena práctica dejarlo abierto por si se llega a necesitar).
+*   `-v jenkins_data:/var/jenkins_home` es para crear un volumen donde se guardan los datos importantes de Jenkins (así no inicia desde 0 cuando se para el contenedor). `jenkins_data` es el nombre del volumen, y `/var/jenkins_home` es el directorio interno en el contenedor.
+*   `jenkins/jenkins:lts` es la imagen oficial de Jenkins desde Docker Hub. `jenkins/jenkins` es el nombre del repositorio. `lts` (Long Term Support) es la versión.
+
+  
+
+Los **resultados del comando** fueron los siguientes:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/de9075ac-c692-4456-a310-8dc56af9c849/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/ac362153-96ff-41fc-abb2-8028cb4dabc2/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/6531a134-04bd-4969-9d23-6dd19bea631f/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/db21c4f2-3e61-4159-a52c-986c92dca18a/image.png)
+
+  
+
+Ahora es necesario hacer la configuración del usuario inicial para poder ingresar al panel de administración de Jenkins.
+
+Primero, hay que poner la contraseña que generó:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/3054615b-7ce1-4b1f-bd75-dfebf1523704/image.png)
+
+  
+
+Eso me deja entrar. Ahora le puse "Instalar los plugins sugeridos":
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/1ea6291d-5ae6-4a8d-b561-6d7e0e838397/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/ad8dc61a-9d67-49fb-b288-4cbfa2cc164b/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/23c11ed5-07bf-4fee-aca6-b8dd5ba0db48/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/b1fd9612-9b1a-4927-9aeb-233d002285af/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/cb394821-728f-4226-a376-ad5824131732/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/45d2a811-f13c-4395-872f-1fc63a3e58ba/image.png)
+
+  
+
+Además de esto, los pipeliines que usaremos para el despliegue dentro de los ambientes que tenemos necesitan de alunas cosas para poder ejectuarse:
+
+*   Kubectl
+*   Maven
+*   az CLI
+
+  
+
+Para evitar tener que hacer configuraciones muy extensas, optamos por instalar estas herramientas dentro de nuestro contenedor de Jenkins. Para esto, entramos al contendor:
+
+```plain
+docker exec -u 0 -it 472838481c5c bash                                                                      
 ```
-### Access proxy-client APIs
-You can manually test `proxy-client` APIs throughout its **Swagger** interface at the following
- URL [https://localhost:8900/swagger-ui.html](https://localhost:8900/swagger-ui.html).
-### Access Service Discovery Server (Eureka)
-If you would like to access the Eureka service discovery point to this URL [http://localhosts:8761/eureka](https://localhost:8761/eureka) to see all the services registered inside it. 
 
-### Access user-service APIs
- URL [https://localhost:8700/swagger-ui.html](https://localhost:8700/swagger-ui.html).
+  
 
-<!--
-Note that it is accessed through API Gateway and is secured. Therefore the browser will ask you for `username:mt` and `password:p,` write them to the dialog, and you will access it. This type of security is a **basic form security**.
--->
-The **API Gateway** and **Store Service** both act as a *resource server*. <!--To know more about calling Store API in a secure way you can check the `test-em-all.sh` script on how I have changed the calling of the services using **OAuth2** security.-->
+Ya estando dentro del contenedor, procedimos a hacer la instalación.
 
-#### Check all **Spring Boot Actuator** exposed metrics http://localhost:8080/app/actuator/metrics:
+  
 
-```bash
-{
-    "names": [
-        "http.server.requests",
-        "jvm.buffer.count",
-        "jvm.buffer.memory.used",
-        "jvm.buffer.total.capacity",
-        "jvm.classes.loaded",
-        "jvm.classes.unloaded",
-        "jvm.gc.live.data.size",
-        "jvm.gc.max.data.size",
-        "jvm.gc.memory.allocated",
-        "jvm.gc.memory.promoted",
-        "jvm.gc.pause",
-        "jvm.memory.committed",
-        "jvm.memory.max",
-        "jvm.memory.used",
-        "jvm.threads.daemon",
-        "jvm.threads.live",
-        "jvm.threads.peak",
-        "jvm.threads.states",
-        "logback.events",
-        "process.cpu.usage",
-        "process.files.max",
-        "process.files.open",
-        "process.start.time",
-        "process.uptime",
-        "resilience4j.circuitbreaker.buffered.calls",
-        "resilience4j.circuitbreaker.calls",
-        "resilience4j.circuitbreaker.failure.rate",
-        "resilience4j.circuitbreaker.not.permitted.calls",
-        "resilience4j.circuitbreaker.slow.call.rate",
-        "resilience4j.circuitbreaker.slow.calls",
-        "resilience4j.circuitbreaker.state",
-        "system.cpu.count",
-        "system.cpu.usage",
-        "system.load.average.1m",
-        "tomcat.sessions.active.current",
-        "tomcat.sessions.active.max",
-        "tomcat.sessions.alive.max",
-        "tomcat.sessions.created",
-        "tomcat.sessions.expired",
-        "tomcat.sessions.rejected",
-        "zipkin.reporter.messages",
-        "zipkin.reporter.messages.dropped",
-        "zipkin.reporter.messages.total",
-        "zipkin.reporter.queue.bytes",
-        "zipkin.reporter.queue.spans",
-        "zipkin.reporter.spans",
-        "zipkin.reporter.spans.dropped",
-        "zipkin.reporter.spans.total"
+**Ya quedó listo el Jenkins para poder usarlo**.
+
+  
+
+### Docker
+
+Docker ya está instalado. Algunas cosas que sí que valdría la pena mencionar es que, en caso de querer hacer la solución en local, es necesario hacer un aprovisionamiento de recursos a Docker, de forma que cuente con los suficientes para no quedarse colgado con la carga de tener tantas cosas montadas dentro del clúster en su interior.
+
+  
+
+Para esto, creamos un archivo en `C:\Users\User` llamado `.wslconfig`:
+
+```plain
+[wsl2]
+memory=12GB
+processors=4
+swap=4GB
+localhostForwarding=true
+```
+
+  
+
+Esto nos da la posibilidad de contar con más recursos.
+
+  
+
+### Kubernetes
+
+Para poder hacer la orquestación de los kubernetes de forma local usaríamos **_Minikube_**. Esta es una herramienta que permite hacer el manejo de los clúster y sus nodos, donde nuestro PC es el clúster.
+
+Para poder hacer el manejo de esto, hay que usar `kubectl` que es la **herramienta de CLI oficial** para la interacción con Kubernetes. **Sirve para conectarse al cluster tanto local** (con Minikube) **como remoto** (en la nube).
+
+  
+
+#### Minikube
+
+Para instalar Minikube, fui a la [sección de Inicio de su documentación](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download), e hice la instalación para Windows:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/c8dcf315-bcae-4834-ba7d-10f2c4e196e6/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/78bd9568-a9bb-4884-8fbb-0d8fac76b32b/image.png)
+
+  
+
+Para instalar `kubectl`, fui a la [sección de Binarios de la documentación de Kubernetes](https://kubernetes.io/releases/download/#binaries), e hice la instalación para Windows:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/1b144685-7a3f-461e-a2f5-25b33233cf29/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/08196344-3c07-4830-9417-3ee814f8eac6/image.png)
+
+  
+
+Ahora sí es momento de iniciar:
+
+```plain
+minikube start
+```
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/a94b3260-b8aa-4c20-b75a-9220318def9f/image.png)
+
+  
+
+Esto crea un contenedor de Docker:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/6477a5f5-e449-4feb-ac8f-c1e62d14073a/image.png)
+
+  
+
+#### AKS
+
+A pesar de que mostramos cómo configuramos Minikube para trabajar con un clúster local, ya mencionamos que terminamos por hacer el taller usando Azure. Por tanto, optamos por crear una infraestructura que levantara un Azure Kubernetes Service (AKS), de forma que nos permitiera tener el clúster allí, y hacer el manejo de todo desde allí:
+
+```plain
+resource "azurerm_kubernetes_cluster" "this" {
+  name                = var.aks_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  dns_prefix          = "${var.aks_name}-dns"
+
+  default_node_pool {
+    name       = "default"
+    node_count = var.node_count
+    vm_size    = var.vm_size
+    vnet_subnet_id = var.vnet_subnet_id
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+    service_cidr      = "172.16.0.0/16"
+    dns_service_ip    = "172.16.0.10"   
+  }
+
+  role_based_access_control_enabled = true
+
+  lifecycle {
+    ignore_changes = [
+      default_node_pool[0].node_count,
     ]
+  }
 }
 ```
 
-#### Prometheus exposed metrics at http://localhost:8080/app/actuator/prometheus
+  
 
-```bash
-# HELP resilience4j_circuitbreaker_not_permitted_calls_total Total number of not permitted calls
-# TYPE resilience4j_circuitbreaker_not_permitted_calls_total counter
-resilience4j_circuitbreaker_not_permitted_calls_total{kind="not_permitted",name="proxyService",} 0.0
-# HELP jvm_gc_live_data_size_bytes Size of long-lived heap memory pool after reclamation
-# TYPE jvm_gc_live_data_size_bytes gauge
-jvm_gc_live_data_size_bytes 3721880.0
-# HELP jvm_gc_pause_seconds Time spent in GC pause
-# TYPE jvm_gc_pause_seconds summary
-jvm_gc_pause_seconds_count{action="end of minor GC",cause="Metadata GC Threshold",} 1.0
-jvm_gc_pause_seconds_sum{action="end of minor GC",cause="Metadata GC Threshold",} 0.071
-jvm_gc_pause_seconds_count{action="end of minor GC",cause="G1 Evacuation Pause",} 6.0
-jvm_gc_pause_seconds_sum{action="end of minor GC",cause="G1 Evacuation Pause",} 0.551
-# HELP jvm_gc_pause_seconds_max Time spent in GC pause
-# TYPE jvm_gc_pause_seconds_max gauge
-jvm_gc_pause_seconds_max{action="end of minor GC",cause="Metadata GC Threshold",} 0.071
-jvm_gc_pause_seconds_max{action="end of minor GC",cause="G1 Evacuation Pause",} 0.136
-# HELP system_cpu_usage The "recent cpu usage" for the whole system
-# TYPE system_cpu_usage gauge
-system_cpu_usage 0.4069206655413552
-# HELP jvm_buffer_total_capacity_bytes An estimate of the total capacity of the buffers in this pool
-# TYPE jvm_buffer_total_capacity_bytes gauge
-jvm_buffer_total_capacity_bytes{id="mapped",} 0.0
-jvm_buffer_total_capacity_bytes{id="direct",} 24576.0
-# HELP zipkin_reporter_spans_dropped_total Spans dropped (failed to report)
-# TYPE zipkin_reporter_spans_dropped_total counter
-zipkin_reporter_spans_dropped_total 4.0
-# HELP zipkin_reporter_spans_bytes_total Total bytes of encoded spans reported
-# TYPE zipkin_reporter_spans_bytes_total counter
-zipkin_reporter_spans_bytes_total 1681.0
-# HELP tomcat_sessions_active_current_sessions  
-# TYPE tomcat_sessions_active_current_sessions gauge
-tomcat_sessions_active_current_sessions 0.0
-# HELP jvm_classes_loaded_classes The number of classes that are currently loaded in the Java virtual machine
-# TYPE jvm_classes_loaded_classes gauge
-jvm_classes_loaded_classes 13714.0
-# HELP process_files_open_files The open file descriptor count
-# TYPE process_files_open_files gauge
-process_files_open_files 17.0
-# HELP resilience4j_circuitbreaker_slow_call_rate The slow call of the circuit breaker
-# TYPE resilience4j_circuitbreaker_slow_call_rate gauge
-resilience4j_circuitbreaker_slow_call_rate{name="proxyService",} -1.0
-# HELP system_cpu_count The number of processors available to the Java virtual machine
-# TYPE system_cpu_count gauge
-system_cpu_count 8.0
-# HELP jvm_threads_daemon_threads The current number of live daemon threads
-# TYPE jvm_threads_daemon_threads gauge
-jvm_threads_daemon_threads 21.0
-# HELP zipkin_reporter_messages_total Messages reported (or attempted to be reported)
-# TYPE zipkin_reporter_messages_total counter
-zipkin_reporter_messages_total 2.0
-# HELP zipkin_reporter_messages_dropped_total  
-# TYPE zipkin_reporter_messages_dropped_total counter
-zipkin_reporter_messages_dropped_total{cause="ResourceAccessException",} 2.0
-# HELP zipkin_reporter_messages_bytes_total Total bytes of messages reported
-# TYPE zipkin_reporter_messages_bytes_total counter
-zipkin_reporter_messages_bytes_total 1368.0
-# HELP http_server_requests_seconds  
-# TYPE http_server_requests_seconds summary
-http_server_requests_seconds_count{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/metrics",} 1.0
-http_server_requests_seconds_sum{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/metrics",} 1.339804427
-http_server_requests_seconds_count{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/prometheus",} 1.0
-http_server_requests_seconds_sum{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/prometheus",} 0.053689381
-# HELP http_server_requests_seconds_max  
-# TYPE http_server_requests_seconds_max gauge
-http_server_requests_seconds_max{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/metrics",} 1.339804427
-http_server_requests_seconds_max{exception="None",method="GET",outcome="SUCCESS",status="200",uri="/actuator/prometheus",} 0.053689381
-# HELP resilience4j_circuitbreaker_slow_calls The number of slow successful which were slower than a certain threshold
-# TYPE resilience4j_circuitbreaker_slow_calls gauge
-resilience4j_circuitbreaker_slow_calls{kind="successful",name="proxyService",} 0.0
-resilience4j_circuitbreaker_slow_calls{kind="failed",name="proxyService",} 0.0
-# HELP jvm_classes_unloaded_classes_total The total number of classes unloaded since the Java virtual machine has started execution
-# TYPE jvm_classes_unloaded_classes_total counter
-jvm_classes_unloaded_classes_total 0.0
-# HELP process_files_max_files The maximum file descriptor count
-# TYPE process_files_max_files gauge
-process_files_max_files 1048576.0
-# HELP resilience4j_circuitbreaker_calls_seconds Total number of successful calls
-# TYPE resilience4j_circuitbreaker_calls_seconds summary
-resilience4j_circuitbreaker_calls_seconds_count{kind="successful",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_sum{kind="successful",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_count{kind="failed",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_sum{kind="failed",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_count{kind="ignored",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_sum{kind="ignored",name="proxyService",} 0.0
-# HELP resilience4j_circuitbreaker_calls_seconds_max Total number of successful calls
-# TYPE resilience4j_circuitbreaker_calls_seconds_max gauge
-resilience4j_circuitbreaker_calls_seconds_max{kind="successful",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_max{kind="failed",name="proxyService",} 0.0
-resilience4j_circuitbreaker_calls_seconds_max{kind="ignored",name="proxyService",} 0.0
-# HELP zipkin_reporter_spans_total Spans reported
-# TYPE zipkin_reporter_spans_total counter
-zipkin_reporter_spans_total 5.0
-# HELP zipkin_reporter_queue_bytes Total size of all encoded spans queued for reporting
-# TYPE zipkin_reporter_queue_bytes gauge
-zipkin_reporter_queue_bytes 0.0
-# HELP tomcat_sessions_expired_sessions_total  
-# TYPE tomcat_sessions_expired_sessions_total counter
-tomcat_sessions_expired_sessions_total 0.0
-# HELP tomcat_sessions_alive_max_seconds  
-# TYPE tomcat_sessions_alive_max_seconds gauge
-tomcat_sessions_alive_max_seconds 0.0
-# HELP process_uptime_seconds The uptime of the Java virtual machine
-# TYPE process_uptime_seconds gauge
-process_uptime_seconds 224.402
-# HELP tomcat_sessions_active_max_sessions  
-# TYPE tomcat_sessions_active_max_sessions gauge
-tomcat_sessions_active_max_sessions 0.0
-# HELP process_cpu_usage The "recent cpu usage" for the Java Virtual Machine process
-# TYPE process_cpu_usage gauge
-process_cpu_usage 5.625879043600563E-4
-# HELP jvm_gc_memory_promoted_bytes_total Count of positive increases in the size of the old generation memory pool before GC to after GC
-# TYPE jvm_gc_memory_promoted_bytes_total counter
-jvm_gc_memory_promoted_bytes_total 1.7851088E7
-# HELP logback_events_total Number of error level events that made it to the logs
-# TYPE logback_events_total counter
-logback_events_total{level="warn",} 5.0
-logback_events_total{level="debug",} 79.0
-logback_events_total{level="error",} 0.0
-logback_events_total{level="trace",} 0.0
-logback_events_total{level="info",} 60.0
-# HELP tomcat_sessions_created_sessions_total  
-# TYPE tomcat_sessions_created_sessions_total counter
-tomcat_sessions_created_sessions_total 0.0
-# HELP jvm_threads_live_threads The current number of live threads including both daemon and non-daemon threads
-# TYPE jvm_threads_live_threads gauge
-jvm_threads_live_threads 25.0
-# HELP jvm_threads_states_threads The current number of threads having NEW state
-# TYPE jvm_threads_states_threads gauge
-jvm_threads_states_threads{state="runnable",} 6.0
-jvm_threads_states_threads{state="blocked",} 0.0
-jvm_threads_states_threads{state="waiting",} 8.0
-jvm_threads_states_threads{state="timed-waiting",} 11.0
-jvm_threads_states_threads{state="new",} 0.0
-jvm_threads_states_threads{state="terminated",} 0.0
-# HELP tomcat_sessions_rejected_sessions_total  
-# TYPE tomcat_sessions_rejected_sessions_total counter
-tomcat_sessions_rejected_sessions_total 0.0
-# HELP process_start_time_seconds Start time of the process since unix epoch.
-# TYPE process_start_time_seconds gauge
-process_start_time_seconds 1.64088634006E9
-# HELP resilience4j_circuitbreaker_buffered_calls The number of buffered failed calls stored in the ring buffer
-# TYPE resilience4j_circuitbreaker_buffered_calls gauge
-resilience4j_circuitbreaker_buffered_calls{kind="successful",name="proxyService",} 0.0
-resilience4j_circuitbreaker_buffered_calls{kind="failed",name="proxyService",} 0.0
-# HELP jvm_memory_max_bytes The maximum amount of memory in bytes that can be used for memory management
-# TYPE jvm_memory_max_bytes gauge
-jvm_memory_max_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'",} 1.22908672E8
-jvm_memory_max_bytes{area="heap",id="G1 Survivor Space",} -1.0
-jvm_memory_max_bytes{area="heap",id="G1 Old Gen",} 5.182062592E9
-jvm_memory_max_bytes{area="nonheap",id="Metaspace",} -1.0
-jvm_memory_max_bytes{area="nonheap",id="CodeHeap 'non-nmethods'",} 5836800.0
-jvm_memory_max_bytes{area="heap",id="G1 Eden Space",} -1.0
-jvm_memory_max_bytes{area="nonheap",id="Compressed Class Space",} 1.073741824E9
-jvm_memory_max_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",} 1.22912768E8
-# HELP jvm_memory_committed_bytes The amount of memory in bytes that is committed for the Java virtual machine to use
-# TYPE jvm_memory_committed_bytes gauge
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'",} 1.6646144E7
-jvm_memory_committed_bytes{area="heap",id="G1 Survivor Space",} 2.4117248E7
-jvm_memory_committed_bytes{area="heap",id="G1 Old Gen",} 1.7301504E8
-jvm_memory_committed_bytes{area="nonheap",id="Metaspace",} 7.6857344E7
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-nmethods'",} 2555904.0
-jvm_memory_committed_bytes{area="heap",id="G1 Eden Space",} 2.71581184E8
-jvm_memory_committed_bytes{area="nonheap",id="Compressed Class Space",} 1.0354688E7
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",} 6619136.0
-# HELP jvm_memory_used_bytes The amount of used memory
-# TYPE jvm_memory_used_bytes gauge
-jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'",} 1.6585088E7
-jvm_memory_used_bytes{area="heap",id="G1 Survivor Space",} 2.4117248E7
-jvm_memory_used_bytes{area="heap",id="G1 Old Gen",} 2.0524392E7
-jvm_memory_used_bytes{area="nonheap",id="Metaspace",} 7.4384552E7
-jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-nmethods'",} 1261696.0
-jvm_memory_used_bytes{area="heap",id="G1 Eden Space",} 2.5165824E7
-jvm_memory_used_bytes{area="nonheap",id="Compressed Class Space",} 9365664.0
-jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",} 6604416.0
-# HELP system_load_average_1m The sum of the number of runnable entities queued to available processors and the number of runnable entities running on the available processors averaged over a period of time
-# TYPE system_load_average_1m gauge
-system_load_average_1m 8.68
-# HELP resilience4j_circuitbreaker_state The states of the circuit breaker
-# TYPE resilience4j_circuitbreaker_state gauge
-resilience4j_circuitbreaker_state{name="proxyService",state="forced_open",} 0.0
-resilience4j_circuitbreaker_state{name="proxyService",state="closed",} 1.0
-resilience4j_circuitbreaker_state{name="proxyService",state="disabled",} 0.0
-resilience4j_circuitbreaker_state{name="proxyService",state="open",} 0.0
-resilience4j_circuitbreaker_state{name="proxyService",state="half_open",} 0.0
-resilience4j_circuitbreaker_state{name="proxyService",state="metrics_only",} 0.0
-# HELP jvm_buffer_memory_used_bytes An estimate of the memory that the Java virtual machine is using for this buffer pool
-# TYPE jvm_buffer_memory_used_bytes gauge
-jvm_buffer_memory_used_bytes{id="mapped",} 0.0
-jvm_buffer_memory_used_bytes{id="direct",} 24576.0
-# HELP resilience4j_circuitbreaker_failure_rate The failure rate of the circuit breaker
-# TYPE resilience4j_circuitbreaker_failure_rate gauge
-resilience4j_circuitbreaker_failure_rate{name="proxyService",} -1.0
-# HELP zipkin_reporter_queue_spans Spans queued for reporting
-# TYPE zipkin_reporter_queue_spans gauge
-zipkin_reporter_queue_spans 0.0
-# HELP jvm_gc_memory_allocated_bytes_total Incremented for an increase in the size of the (young) heap memory pool after one GC to before the next
-# TYPE jvm_gc_memory_allocated_bytes_total counter
-jvm_gc_memory_allocated_bytes_total 1.402994688E9
-# HELP jvm_buffer_count_buffers An estimate of the number of buffers in the pool
-# TYPE jvm_buffer_count_buffers gauge
-jvm_buffer_count_buffers{id="mapped",} 0.0
-jvm_buffer_count_buffers{id="direct",} 3.0
-# HELP jvm_threads_peak_threads The peak live thread count since the Java virtual machine started or peak was reset
-# TYPE jvm_threads_peak_threads gauge
-jvm_threads_peak_threads 25.0
-# HELP jvm_gc_max_data_size_bytes Max size of long-lived heap memory pool
-# TYPE jvm_gc_max_data_size_bytes gauge
-jvm_gc_max_data_size_bytes 5.182062592E9
+Para el manejo de este clúster seguiremos usando `kubectl`.
+
+  
+
+### Helm
+
+Para facilitar la gestión que haremos del clúster, vamos a instalar Helm.
+
+  
+
+**Helm** es un **gestor de paquetes para Kubernetes** que facilita la **implementación, configuración y gestión de aplicaciones** en clústeres de Kubernetes. Funciona de forma similar a un gestor de paquetes como `apt` en Ubuntu o `yum` en CentOS, pero específicamente para Kubernetes.
+
+  
+
+Para instalarlo solo fui a su [página](https://helm.sh/docs/intro/install/) y descargué la versión de Windows. Luego solo agregué la ubicación del `.exe` a las variables de entorno.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/7061eb25-991f-4ff4-857c-33163c09c0d5/image.png)
+
+  
+
+## Punto 2: Pipeline para `dev`
+
+### Pipeline
+
+En este punto se definirán los pipelines de construcción de los microservicios. En términos generales, **"construir"** una aplicación en CI/CD significa:
+
+1. **Clonar el código fuente** desde el repositorio (en este caso GitHub).
+2. **Instalar dependencias** (ej. Maven o Gradle si los servicios están en Java).
+3. **Compilar el código**.
+4. **Construir la imagen Docker** del microservicio.
+5. **Publicar (opcional)** la imagen en un registry (ej. Docker Hub o GitHub Container Registry).
+
+> Como estamos en el entorno **dev**, en este punto **no se hace aún el despliegue en Kubernetes** ni se ejecutan pruebas. Solo hay que asegurar que el código compila, construye y genera una imagen Docker correctamente.
+
+  
+
+Sin embargo, creemos que es pertinente tener los microservicios desplegados desde ya en el entorno de desarrollo, pues me permitirá ver si todo va bien, además de que me servirá para los siguientes puntos del taller.
+
+  
+
+Para la realización de este punto partimos de un script de bash que estábamos usando para el despliegue de todos los microservicios de una vez. Este lo creamos pensando en facilitarnos el trabajo, y terminamos por darnos cuenta de que es nuestros pipeline de despliegue en dev, solo que fuera de Jenkins:
+
+```plain
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+RESOURCE_GROUP="ecommerce-rg"
+AKS_NAME="ecommerce-aks"
+K8S_NAMESPACE="dev" # Define your target namespace
+
+# Get AKS credentials and configure kubectl
+az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_NAME" --overwrite-existing
+
+echo "Ensuring Kubernetes namespace '$K8S_NAMESPACE' exists..."
+
+# Check if the namespace exists, if not, create it.
+if ! kubectl get namespace "$K8S_NAMESPACE" &> /dev/null; then
+  echo "Namespace '$K8S_NAMESPACE' does not exist. Creating it now..."
+  kubectl create namespace "$K8S_NAMESPACE"
+  echo "Namespace '$K8S_NAMESPACE' created successfully."
+
+else
+  echo "Namespace '$K8S_NAMESPACE' already exists. Skipping creation."
+fi
+
+echo "Applying Kubernetes manifests to the AKS cluster..."
+
+# 1. Apply k8s/dev/service-discovery-deployment.yml
+echo "Applying k8s/dev/service-discovery-deployment.yml..."
+kubectl apply -f k8s/dev/service-discovery-deployment.yml -n "$K8S_NAMESPACE"
+
+# Wait for service-discovery to be ready (more robust than just sleep)
+echo "Waiting for service-discovery deployment to be ready..."
+kubectl wait --for=condition=Available deployment/service-discovery --timeout=300s -n "$K8S_NAMESPACE" || { echo "Service Discovery deployment failed to become ready. Exiting."; exit 1; }
+
+# 2. Apply all manifests in k8s/core/
+echo "Applying manifests in k8s/core/..."
+kubectl apply -f k8s/core/ -n "$K8S_NAMESPACE"
+
+# Optional: Add a sleep after the second apply if you have other dependencies that need time
+# echo "Sleeping for 10 seconds before applying remaining dev manifests..."
+# sleep 10
+
+# 3. Apply all manifests in k8s/dev/ (except service-discovery-deployment.yml)
+echo "Applying manifests in k8s/dev/ (excluding service-discovery-deployment.yml)..."
+find k8s/dev/ -maxdepth 1 -name "*.yml" ! -name "service-discovery-deployment.yml" -exec kubectl apply -f {} -n "$K8S_NAMESPACE" \;
+
+# Wait for all deployments to be ready (important before running tests)
+echo "Waiting for all deployments in namespace '$K8S_NAMESPACE' to be ready..."
+# This loops through all deployments and waits for each.
+# For a more robust wait, you might want to specifically target known critical deployments.
+for deployment in $(kubectl get deployments -n "$K8S_NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+  echo "  Waiting for deployment/$deployment to be available..."
+  kubectl wait --for=condition=Available deployment/"$deployment" --timeout=300s -n "$K8S_NAMESPACE" || { echo "Deployment $deployment failed to become ready. Exiting."; exit 1; }
+done
+
+echo "All specified Kubernetes manifests have been applied and deployments are ready."
+
+# Newman Integration Tests
+
+echo "--- Starting Newman Integration Tests ---"
+
+# Apply the Newman Job manifest
+echo "Applying Newman Job manifest..."
+kubectl apply -f k8s/newman/newman-job.yml -n "$K8S_NAMESPACE"
+
+# Wait for the Newman Job to complete
+echo "Waiting for Newman Job 'newman-integration-tests' to complete..."
+kubectl wait --for=condition=complete job/newman-integration-tests --timeout=600s -n "$K8S_NAMESPACE" || { echo "Newman Job failed or timed out. Checking logs for details."; exit 1; }
+
+# Get the pod name of the completed job to retrieve logs
+NEWMAN_POD=$(kubectl get pods -n "$K8S_NAMESPACE" -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+
+if [ -n "$NEWMAN_POD" ]; then
+  echo "Newman Job completed. Fetching logs from pod: $NEWMAN_POD"
+  kubectl logs "$NEWMAN_POD" -n "$K8S_NAMESPACE"
+  # kubectl cp "$NEWMAN_POD":/newman-results/report.xml ./newman-report.xml -n "$K8S_NAMESPACE"
+  # echo "JUnit report copied to ./newman-report.xml"
+else
+  echo "Could not find Newman Job pod to fetch logs."
+fi
+
+# Clean up the Newman Job (optional, but good for CI/CD)
+echo "Deleting Newman Job 'newman-integration-tests'..."
+kubectl delete job newman-integration-tests -n "$K8S_NAMESPACE"
+
+echo "Deployment and Integration Tests complete."
 ```
 
-#### Check All Services Health
-From ecommerce front Service proxy we can check all the core services health when you have all the
- microservices up and running using Docker Compose,
-```bash
-selim@:~/ecommerce-microservice-backend-app$ curl -k https://localhost:8443/actuator/health -s | jq .components."\"Core Microservices\""
-```
-This will result in the following response:
-```json
-{
-    "status": "UP",
-    "components": {
-        "circuitBreakers": {
-            "status": "UP",
-            "details": {
-                "proxyService": {
-                    "status": "UP",
-                    "details": {
-                        "failureRate": "-1.0%",
-                        "failureRateThreshold": "50.0%",
-                        "slowCallRate": "-1.0%",
-                        "slowCallRateThreshold": "100.0%",
-                        "bufferedCalls": 0,
-                        "slowCalls": 0,
-                        "slowFailedCalls": 0,
-                        "failedCalls": 0,
-                        "notPermittedCalls": 0,
-                        "state": "CLOSED"
-                    }
+  
+
+Con esto, creamos un pipeline de Jenkins que usamos para el mismo propósito. La razón de tenerlo en Jenkins es que esta más alineado con lo que pide el taller:
+
+```yaml
+pipeline {
+    agent any
+
+    environment {
+        RESOURCE_GROUP = 'ecommerce-rg'
+        AKS_NAME = 'ecommerce-aks'
+        K8S_NAMESPACE = 'dev'
+    }
+
+    stages {
+
+        stage('Login to Azure') {
+            steps {
+                withCredentials([azureServicePrincipal('azure-credentials')]) {
+                    sh '''
+                        echo "Logging into Azure CLI..."
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account show
+                    '''
                 }
             }
-        },
-        "clientConfigServer": {
-            "status": "UNKNOWN",
-            "details": {
-                "error": "no property sources located"
+        }
+
+        stage('Login to Docker') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
             }
-        },
-        "discoveryComposite": {
-            "status": "UP",
-            "components": {
-                "discoveryClient": {
-                    "status": "UP",
-                    "details": {
-                        "services": [
-                            "proxy-client",
-                            "api-gateway",
-                            "cloud-config",
-                            "product-service",
-                            "user-service",
-                            "favourite-service",
-                            "order-service",
-                            "payment-service",
-                            "shipping-service"
-                        ]
-                    }
-                },
-                "eureka": {
-                    "description": "Remote status from Eureka server",
-                    "status": "UP",
-                    "details": {
-                        "applications": {
-                            "FAVOURITE-SERVICE": 1,
-                            "PROXY-CLIENT": 1,
-                            "API-GATEWAY": 1,
-                            "PAYMENT-SERVICE": 1,
-                            "ORDER-SERVICE": 1,
-                            "CLOUD-CONFIG": 1,
-                            "PRODUCT-SERVICE": 1,
-                            "SHIPPING-SERVICE": 1,
-                            "USER-SERVICE": 1
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                echo 'Running unit tests...'
+                sh './mvnw test'
+            }
+        }
+
+        stage('Configure AKS Credentials') {
+            steps {
+                sh '''
+                    az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_NAME" --overwrite-existing
+                '''
+            }
+        }
+
+        stage('Ensure Namespace Exists') {
+            steps {
+                sh '''
+                    pwd
+                    ls -la
+                    ls -la k8s
+                    ls -la k8s/dev
+                    kubectl apply -f k8s/dev/namespace.yml
+                '''
+            }
+        }
+
+        stage('Deploy Service Discovery') {
+            steps {
+                sh '''
+                    kubectl apply -f k8s/dev/service-discovery-deployment.yml -n "$K8S_NAMESPACE"
+                    kubectl wait --for=condition=Available deployment/service-discovery --timeout=300s -n "$K8S_NAMESPACE"
+                '''
+            }
+        }
+
+        stage('Deploy Core Services') {
+            steps {
+                sh 'kubectl apply -f k8s/core/ -n "$K8S_NAMESPACE"'
+            }
+        }
+
+        stage('Deploy Remaining Dev Services') {
+            steps {
+                sh '''
+                    for file in k8s/dev/*.yml; do
+                        case "$file" in
+                            *service-discovery-deployment.yml)
+                                echo "Skipping $file..."
+                                ;;
+                            *)
+                                echo "Applying $file..."
+                                kubectl apply -f "$file" -n "$K8S_NAMESPACE"
+                                ;;
+                        esac
+                    done
+                '''
+            }
+        }
+
+
+        stage('Wait for All Deployments') {
+            steps {
+                sh '''
+                    echo "Waiting for all deployments to become ready..."
+                    for deployment in $(kubectl get deployments -n "$K8S_NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+                        echo "Waiting for $deployment..."
+                        kubectl wait --for=condition=Available deployment/"$deployment" --timeout=300s -n "$K8S_NAMESPACE" || {
+                            echo "Deployment $deployment failed."
+                            exit 1
                         }
+                    done
+                '''
+            }
+        }
+
+        stage('Run Newman Integration Tests') {
+            steps {
+                sh '''
+                    echo "Waiting for 5 minutes before starting Newman integration tests..."
+                    sleep 300
+                    kubectl apply -f k8s/newman/newman-job.yml -n "$K8S_NAMESPACE"
+                    kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n "$K8S_NAMESPACE" || {
+                        echo "Newman tests failed or timed out."
+                        exit 1
+                    }
+
+                    NEWMAN_POD=$(kubectl get pods -n "$K8S_NAMESPACE" -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+                    if [ -n "$NEWMAN_POD" ]; then
+                        echo "Fetching Newman test logs..."
+                        kubectl logs "$NEWMAN_POD" -n "$K8S_NAMESPACE"
+                    else
+                        echo "Newman pod not found."
+                    fi
+                '''
+            }
+        }
+
+        stage('Clean Up Newman Job') {
+            steps {
+                sh 'kubectl delete job newman-integration-tests -n "$K8S_NAMESPACE" || true'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            deleteDir()
+        }
+
+        success {
+            echo '✅ Deployment and integration tests completed successfully.'
+        }
+
+        failure {
+            echo '❌ Pipeline failed. Check logs above.'
+        }
+    }
+}
+
+
+```
+
+  
+
+En Jenkins, creamos el pipeline así:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/2dc4577a-1532-4dca-899a-2231931411c8/image.png)![](https://t9013833367.p.clickup-attachments.com/t9013833367/335f0662-2507-480c-9b25-7acb5cfca7f6/image.png)![](https://t9013833367.p.clickup-attachments.com/t9013833367/abc971ae-4c7f-465d-98fa-4bcb77a56562/image.png)
+
+  
+  
+
+Con esto, quedó perfecto:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/44649b8b-ac0f-4a07-bb2e-696b2f95e75a/image.png)
+
+  
+
+### Eureka
+
+Todo el sistema usa eureka para poder comunicarse entre sí. Por ende, es necesario hacer el despliegue del servicio, para que cada uno se pueda registrar acá.
+
+  
+
+Para eso, usamos esta configuración en `service-discovery-deployment.yml` :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-discovery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-discovery
+  template:
+    metadata:
+      labels:
+        app: service-discovery
+    spec:
+      containers:
+      - name: service-discovery
+        image: jpnino/service-discovery:latest
+        ports:
+        - containerPort: 8761
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: dev
+        - name: SPRING_ZIPKIN_BASE_URL
+          value: http://zipkin:9411
+        - name: SPRING_CONFIG_IMPORT
+          value: optional:configserver:http://cloud-config:9296/
+        - name: EUREKA_INSTANCE
+          value: "service-discovery"
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: service-discovery
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
+          value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-discovery
+spec:
+  selector:
+    app: service-discovery
+  ports:
+  - port: 8761
+    targetPort: 8761
+  type: LoadBalancer
+```
+
+  
+
+Este es uno de los microservicios que se desplegaron con el script de shell, por lo que no es necesario hacer nada más.
+
+Todos los servicios se conectaron al Eureka de forma satisfactoria:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/dbf3f51f-607e-443c-bdbd-e74f03ca5160/image.png)
+
+  
+
+Teniendo esto, no está de más ver que sí esté bien desplegado:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/85716384-7818-4dba-9d1a-53c312207864/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/15c0a229-fc5c-401a-85fa-f00c49ae35a4/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/acbfef5b-1159-464d-ad07-55337aa66b33/image.png)
+
+  
+
+## Punto 3: Pruebas
+
+En este punto hay que implementar las pruebas del código para validar que todo vaya bien.
+
+  
+
+### Pruebas Unitarias
+
+Inicialmente, realizaremos las pruebas unitarias para dos de los microservicios que desplegamos dentro del entorno de dev.
+
+  
+
+#### Servicio: user-service
+
+Hay que decir, inicialmente, que cada microservicio tiene varios endpoints de CRUD para distintas cosas. Como debemos hacer 5 de cada tipo de prueba, entonces optamos por probar las servicios principales (al menos con las unitarias).
+
+  
+
+Para este microservicio haremos las pruebas unitarias que validen el buen funcionamiento de `UserServiceImpl`, que contiene el CRUD para los usuarios del sistema. Por ejemplo:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/607dff46-c919-4e84-87e3-ee7d0378fbca/image.png)
+
+  
+
+Para esto, creamos `UserServiceImplTests` dentro de la carpeta `test\app\com\selimhorri\service\impl\`.
+
+  
+
+Test1:
+
+```java
+    @Test
+    void findAll_shouldReturnListOfUsers() {
+        // Arrange
+        when(userRepository.findAll()).thenReturn(Arrays.asList(user));
+        
+        // Act
+        List<UserDto> result = userService.findAll();
+        
+        // Assert
+        assertNotNull(result, "Result list should not be null");
+        assertEquals(1, result.size(), "Should return one user");
+        assertEquals(DEFAULT_FIRST_NAME, result.get(0).getFirstName(), "First name should match");
+        assertEquals(DEFAULT_LAST_NAME, result.get(0).getLastName(), "Last name should match");
+        assertEquals(DEFAULT_EMAIL, result.get(0).getEmail(), "Email should match");
+        
+        // Verify credential mapping
+        assertNotNull(result.get(0).getCredentialDto(), "Credential should not be null");
+        assertEquals(DEFAULT_USERNAME, result.get(0).getCredentialDto().getUsername(), "Username should match");
+        
+        verify(userRepository, times(1)).findAll();
+    }
+```
+
+  
+
+Test2:
+
+```java
+    @Test
+    void findById_whenUserExists_shouldReturnUser() {
+        // Arrange
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
+        
+        // Act
+        UserDto result = userService.findById(1);
+        
+        // Assert
+        assertNotNull(result, "Result should not be null");
+        assertEquals(1, result.getUserId(), "User ID should match");
+        assertEquals(DEFAULT_FIRST_NAME, result.getFirstName(), "First name should match");
+        assertEquals(DEFAULT_LAST_NAME, result.getLastName(), "Last name should match");
+        assertEquals(DEFAULT_EMAIL, result.getEmail(), "Email should match");
+        
+        // Verify credential mapping
+        assertNotNull(result.getCredentialDto(), "Credential should not be null");
+        assertEquals(DEFAULT_USERNAME, result.getCredentialDto().getUsername(), "Username should match");
+        
+        verify(userRepository, times(1)).findById(1);
+    }
+```
+
+Test3:
+
+```java
+    @Test
+    void findById_whenUserDoesNotExist_shouldThrowException() {
+        // Arrange
+        when(userRepository.findById(999)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        assertThrows(UserObjectNotFoundException.class, () -> 
+            userService.findById(999),
+            "Should throw UserObjectNotFoundException"
+        );
+        verify(userRepository, times(1)).findById(999);
+    }
+```
+
+Test4:
+
+```java
+    @Test
+    void save_shouldReturnSavedUser() {
+        // Arrange
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        
+        // Act
+        UserDto result = userService.save(userDto);
+        
+        // Assert
+        assertNotNull(result, "Saved user should not be null");
+        assertEquals(userDto.getUserId(), result.getUserId(), "User ID should match");
+        assertEquals(userDto.getFirstName(), result.getFirstName(), "First name should match");
+        assertEquals(userDto.getEmail(), result.getEmail(), "Email should match");
+        
+        // Verify credential mapping
+        assertNotNull(result.getCredentialDto(), "Credential should not be null");
+        assertEquals(DEFAULT_USERNAME, result.getCredentialDto().getUsername(), "Username should match");
+        
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+```
+
+Test5:
+
+```java
+    @Test
+    void findByUsername_whenUserExists_shouldReturnUser() {
+        // Arrange
+        when(userRepository.findByCredentialUsername(DEFAULT_USERNAME)).thenReturn(Optional.of(user));
+        
+        // Act
+        UserDto result = userService.findByUsername(DEFAULT_USERNAME);
+        
+        // Assert
+        assertNotNull(result, "Result should not be null");
+        assertEquals(DEFAULT_FIRST_NAME, result.getFirstName(), "First name should match");
+        assertEquals(DEFAULT_LAST_NAME, result.getLastName(), "Last name should match");
+        assertEquals(DEFAULT_EMAIL, result.getEmail(), "Email should match");
+        
+        // Verify credential mapping
+        assertNotNull(result.getCredentialDto(), "Credential should not be null");
+        assertEquals(DEFAULT_USERNAME, result.getCredentialDto().getUsername(), "Username should match");
+        
+        verify(userRepository, times(1)).findByCredentialUsername(DEFAULT_USERNAME);
+    }
+```
+
+  
+
+Test6:
+
+```java
+    @Test 
+    void deleteById_shouldCallRepositoryDeleteById() {
+        // Arrange
+        Integer userId = 1;
+        doNothing().when(userRepository).deleteById(userId);
+        
+        // Act
+        userService.deleteById(userId);
+        
+        // Assert
+        verify(userRepository, times(1)).deleteById(userId);
+    }
+```
+
+  
+
+Haciendo las pruebas, notamos que el update de user-service estaba incorrecto, pues no estaba actualizando nada. Entonces lo corregí. Después, todo funcionó bien:
+
+```plain
+.\mvnw -Dtest=UserServiceImplTests test
+```
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/25ff093b-f32f-4d90-b5b4-68838072f065/image.png)
+
+  
+
+#### Servicio: product-service
+
+Para este microservicio voy a haremos pruebas unitarias que validen el buen funcionamiento de `ProductServiceImpl`, que contiene el CRUD para los productos del sistema. Por ejemplo:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/0536ae94-4942-4c5b-ae07-e2f182680763/image.png)
+
+  
+
+Para esto, creamos `ProductServiceImplTest` dentro de la carpeta `test\app\com\selimhorri\service\impl`.
+
+  
+
+Test1:
+
+```java
+    @Test
+    void findAll_shouldReturnListOfProducts() {
+        // Arrange
+        when(productRepository.findAll()).thenReturn(Arrays.asList(product));
+        
+        // Act
+        List<ProductDto> result = productService.findAll();
+        
+        // Assert
+        assertNotNull(result, "Result list should not be null");
+        assertEquals(1, result.size(), "Should return one product");
+        assertEquals(DEFAULT_PRODUCT_TITLE, result.get(0).getProductTitle(), "Product title should match");
+        assertEquals(DEFAULT_SKU, result.get(0).getSku(), "SKU should match");
+        assertEquals(DEFAULT_PRICE, result.get(0).getPriceUnit(), "Price should match");
+        
+        // Verify category mapping
+        assertNotNull(result.get(0).getCategoryDto(), "Category should not be null");
+        assertEquals(DEFAULT_CATEGORY_TITLE, result.get(0).getCategoryDto().getCategoryTitle(), "Category title should match");
+        
+        verify(productRepository, times(1)).findAll();
+    }
+```
+
+  
+
+Test2:
+
+```java
+    @Test
+    void findById_whenProductExists_shouldReturnProduct() {
+        // Arrange
+        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        
+        // Act
+        ProductDto result = productService.findById(1);
+        
+        // Assert
+        assertNotNull(result, "Result should not be null");
+        assertEquals(1, result.getProductId(), "Product ID should match");
+        assertEquals(DEFAULT_PRODUCT_TITLE, result.getProductTitle(), "Product title should match");
+        assertEquals(DEFAULT_SKU, result.getSku(), "SKU should match");
+        assertEquals(DEFAULT_PRICE, result.getPriceUnit(), "Price should match");
+        
+        // Verify category mapping
+        assertNotNull(result.getCategoryDto(), "Category should not be null");
+        assertEquals(DEFAULT_CATEGORY_TITLE, result.getCategoryDto().getCategoryTitle(), "Category title should match");
+        
+        verify(productRepository, times(1)).findById(1);
+    }
+```
+
+  
+
+Test3:
+
+```java
+    void findById_whenProductDoesNotExist_shouldThrowException() {
+        // Arrange
+        when(productRepository.findById(999)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        assertThrows(ProductNotFoundException.class, () -> 
+            productService.findById(999),
+            "Should throw ProductNotFoundException"
+        );
+        verify(productRepository, times(1)).findById(999);
+    }
+```
+
+  
+
+Test4:
+
+```java
+    @Test
+    void save_shouldReturnSavedProduct() {
+        // Arrange
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        
+        // Act
+        ProductDto result = productService.save(productDto);
+        
+        // Assert
+        assertNotNull(result, "Saved product should not be null");
+        assertEquals(productDto.getProductId(), result.getProductId(), "Product ID should match");
+        assertEquals(productDto.getProductTitle(), result.getProductTitle(), "Product title should match");
+        assertEquals(productDto.getSku(), result.getSku(), "SKU should match");
+        assertEquals(productDto.getPriceUnit(), result.getPriceUnit(), "Price should match");
+        
+        // Verify category mapping
+        assertNotNull(result.getCategoryDto(), "Category should not be null");
+        assertEquals(DEFAULT_CATEGORY_TITLE, result.getCategoryDto().getCategoryTitle(), "Category title should match");
+        
+        verify(productRepository, times(1)).save(any(Product.class));
+    }
+```
+
+  
+
+Test5:
+
+```java
+    @Test
+    void update_shouldReturnUpdatedProduct() {
+        // Arrange
+        Product updatedProduct = Product.builder()
+            .productId(1)
+            .productTitle("Updated Product")
+            .imageUrl(DEFAULT_IMAGE_URL)
+            .sku(DEFAULT_SKU)
+            .priceUnit(149.99)
+            .quantity(DEFAULT_QUANTITY)
+            .category(category)
+            .build();
+        updatedProduct.setCreatedAt(product.getCreatedAt());
+        updatedProduct.setUpdatedAt(product.getUpdatedAt());
+        
+        when(productRepository.save(any(Product.class))).thenReturn(updatedProduct);
+        
+        // Update the DTO
+        productDto.setProductTitle("Updated Product");
+        productDto.setPriceUnit(149.99);
+        
+        // Act
+        ProductDto result = productService.update(productDto);
+        
+        // Assert
+        assertNotNull(result, "Updated product should not be null");
+        assertEquals("Updated Product", result.getProductTitle(), "Product title should be updated");
+        assertEquals(149.99, result.getPriceUnit(), "Price should be updated");
+        assertEquals(productDto.getSku(), result.getSku(), "SKU should remain unchanged");
+        
+        verify(productRepository, times(1)).save(any(Product.class));
+    }
+    
+    @Test
+    void deleteById_shouldCallRepositoryDeleteById() {
+        // Arrange
+        Integer productId = 1;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        
+        // Act
+        productService.deleteById(productId);
+        
+        // Assert
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository, times(1)).delete(any(Product.class));
+    }
+```
+
+  
+
+Los resultados de las pruebas fueron:
+
+```plain
+.\mvnw -Dtest=ProductServiceImplTests test
+```
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/4402f557-0c8d-487e-af20-94b14a52e426/image.png)
+
+  
+
+### Pruebas de Integración
+
+Las pruebas de integración las realizamos para los mismos dos microservicios para los que hicimos unitarias: `user-service` y `produt-service`.
+
+  
+
+En estas pruebas de integración, nos aseguramos de que los controladores de estos dos servicios estén funcionando bien.
+
+  
+
+#### Servicio: user-service
+
+Las pruebas que implementamos validan el comportamiento del **servicio** **`UserService`** con acceso real a la base de datos en un entorno de Spring Boot cargado con perfil `test`, utilizando un repositorio real (no mockeado).
+
+  
+
+Estas pruebas quedaron en `test\java\com\selimhorri\app\service\UserServiceIntegrationTests.java`.
+
+  
+
+Test1:
+
+```java
+    @Test
+    void saveUser_shouldPersistUser() {
+        UserDto savedUserDto = userService.save(userDto);
+
+        assertThat(savedUserDto).isNotNull();
+        assertThat(savedUserDto.getUserId()).isNotNull();
+        assertThat(savedUserDto.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+        assertThat(savedUserDto.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+        assertThat(savedUserDto.getEmail()).isEqualTo(DEFAULT_EMAIL);
+        assertThat(savedUserDto.getPhone()).isEqualTo(DEFAULT_PHONE);
+        assertThat(savedUserDto.getImageUrl()).isEqualTo(DEFAULT_IMAGE_URL);
+        assertThat(savedUserDto.getCredentialDto().getUsername()).isEqualTo(DEFAULT_USERNAME);
+
+        Optional<User> repoUser = userRepository.findById(savedUserDto.getUserId());
+        assertThat(repoUser).isPresent();
+        assertThat(repoUser.get().getEmail()).isEqualTo(DEFAULT_EMAIL);
+    }
+```
+
+Test2:
+
+```java
+    @Test
+    void updateUser_shouldModifyExistingUser() {
+        User savedEntity = userRepository.saveAndFlush(user);
+
+        UserDto dtoToUpdate = UserDto.builder()
+                .userId(savedEntity.getUserId())
+                .firstName(UPDATED_FIRST_NAME)
+                .lastName(UPDATED_LAST_NAME)
+                .email(UPDATED_EMAIL)
+                .phone(savedEntity.getPhone())
+                .imageUrl(savedEntity.getImageUrl())
+                .credentialDto(CredentialDto.builder()
+                        .credentialId(savedEntity.getCredential().getCredentialId())
+                        .username(savedEntity.getCredential().getUsername())
+                        .password(savedEntity.getCredential().getPassword())
+                        .isEnabled(savedEntity.getCredential().getIsEnabled())
+                        .isAccountNonExpired(savedEntity.getCredential().getIsAccountNonExpired())
+                        .isAccountNonLocked(savedEntity.getCredential().getIsAccountNonLocked())
+                        .isCredentialsNonExpired(savedEntity.getCredential().getIsCredentialsNonExpired())
+                        .build())
+                .build();
+
+        UserDto updatedDto = userService.update(dtoToUpdate);
+
+        assertThat(updatedDto.getFirstName()).isEqualTo(UPDATED_FIRST_NAME);
+        assertThat(updatedDto.getLastName()).isEqualTo(UPDATED_LAST_NAME);
+        assertThat(updatedDto.getEmail()).isEqualTo(UPDATED_EMAIL);
+    }
+
+
+```
+
+Test3:
+
+```plain
+    @Test
+    void deleteUserById_shouldRemoveUserFromDatabase() {
+        User savedEntity = userRepository.saveAndFlush(user);
+        Integer userIdToDelete = savedEntity.getUserId();
+
+        assertThat(userRepository.findById(userIdToDelete)).isPresent();
+
+        userService.deleteById(userIdToDelete);
+
+        assertThat(userRepository.findById(userIdToDelete)).isNotPresent();
+    }
+```
+
+Test4:
+
+```plain
+    @Test
+    void findUserById_whenExists_shouldReturnUser() {
+        User savedEntity = userRepository.saveAndFlush(user);
+        Integer userIdToFind = savedEntity.getUserId();
+
+        UserDto foundDto = userService.findById(userIdToFind);
+
+        assertThat(foundDto).isNotNull();
+        assertThat(foundDto.getUserId()).isEqualTo(userIdToFind);
+        assertThat(foundDto.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+    }
+```
+
+Test5:
+
+```plain
+    @Test
+    void findUserById_whenNotExists_shouldThrowUserObjectNotFoundException() {
+        Integer nonExistentId = -999;
+        Exception exception = assertThrows(UserObjectNotFoundException.class, () -> {
+            userService.findById(nonExistentId);
+        });
+
+        assertThat(exception.getMessage()).contains("User with id: " + nonExistentId + " not found");
+    }
+
+    @Test
+    void findByUsername_whenExists_shouldReturnUser() {
+        userRepository.saveAndFlush(user);
+
+        UserDto foundDto = userService.findByUsername(DEFAULT_USERNAME);
+
+        assertThat(foundDto).isNotNull();
+        assertThat(foundDto.getCredentialDto().getUsername()).isEqualTo(DEFAULT_USERNAME);
+    }
+
+    @Test
+    void findByUsername_whenNotExists_shouldThrowUserObjectNotFoundException() {
+        String invalidUsername = "unknown_user";
+        Exception exception = assertThrows(UserObjectNotFoundException.class, () -> {
+            userService.findByUsername(invalidUsername);
+        });
+
+        assertThat(exception.getMessage()).contains("User with username: " + invalidUsername + " not found");
+    }
+```
+
+  
+
+Test6:
+
+```plain
+    @Test
+    void findAll_shouldReturnAllUsers() {
+        userRepository.saveAndFlush(user); // User 1
+
+        Credential credential2 = Credential.builder()
+                .username("carlap")
+                .password("pw")
+                .isEnabled(true)
+                .isAccountNonExpired(true)
+                .isAccountNonLocked(true)
+                .isCredentialsNonExpired(true)
+                .build();
+
+        User user2 = User.builder()
+                .firstName("Carla")
+                .lastName("Perez")
+                .email("carla.perez@example.com")
+                .phone("777888999")
+                .imageUrl("http://example.com/carla.jpg")
+                .credential(credential2)
+                .build();
+
+        credential2.setUser(user2);
+        userRepository.saveAndFlush(user2); // User 2
+
+        List<UserDto> users = userService.findAll();
+
+        assertThat(users).isNotNull();
+        assertThat(users.size()).isEqualTo(2);
+        assertThat(users.stream().anyMatch(u -> u.getFirstName().equals(DEFAULT_FIRST_NAME))).isTrue();
+        assertThat(users.stream().anyMatch(u -> u.getFirstName().equals("Carla"))).isTrue();
+    }
+```
+
+  
+
+El resultado de las pruebas fue:
+
+```plain
+.\mvnw -Dtest=UserServiceIntegrationTests test
+```
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/4b3f7896-2b1f-4faa-8c43-deff43205ae9/image.png)
+
+  
+
+#### Servicio: product-service
+
+Las pruebas que implementamos validan el comportamiento del **servicio** **`ProductService`** con acceso real a la base de datos en un entorno de Spring Boot cargado con perfil `test`, utilizando un repositorio real (no mockeado).
+
+Estas pruebas quedaron en `test\java\com\selimhorri\app\service\`[`ProductServiceIntegrationTests.java`](http://ProductServiceIntegrationTests.java).
+
+  
+
+Test1:
+
+```plain
+     @Test
+    void saveProduct_shouldPersistProduct() {
+        ProductDto savedProductDto = productService.save(productDto);
+
+        assertThat(savedProductDto).isNotNull();
+        assertThat(savedProductDto.getProductId()).isNotNull();
+        assertThat(savedProductDto.getProductTitle()).isEqualTo(DEFAULT_PRODUCT_TITLE);
+        assertThat(savedProductDto.getSku()).isEqualTo(DEFAULT_SKU);
+        assertThat(savedProductDto.getPriceUnit()).isEqualTo(DEFAULT_PRICE);
+        assertThat(savedProductDto.getQuantity()).isEqualTo(DEFAULT_QUANTITY);
+        assertThat(savedProductDto.getCategoryDto().getCategoryTitle()).isEqualTo(DEFAULT_CATEGORY_TITLE);
+
+        Optional<Product> repoProduct = productRepository.findById(savedProductDto.getProductId());
+        assertThat(repoProduct).isPresent();
+        assertThat(repoProduct.get().getSku()).isEqualTo(DEFAULT_SKU);
+    }
+```
+
+Test2:
+
+```plain
+    @Test
+    void updateProduct_shouldModifyExistingProduct() {
+        Product savedEntity = productRepository.saveAndFlush(product);
+
+        ProductDto dtoToUpdate = ProductDto.builder()
+                .productId(savedEntity.getProductId())
+                .productTitle(UPDATED_PRODUCT_TITLE)
+                .imageUrl(savedEntity.getImageUrl())
+                .sku(savedEntity.getSku())
+                .priceUnit(UPDATED_PRICE)
+                .quantity(UPDATED_QUANTITY)
+                .categoryDto(CategoryDto.builder()
+                        .categoryId(savedEntity.getCategory().getCategoryId())
+                        .categoryTitle(savedEntity.getCategory().getCategoryTitle())
+                        .imageUrl(savedEntity.getCategory().getImageUrl())
+                        .build())
+                .build();
+
+        ProductDto updatedDto = productService.update(dtoToUpdate);
+
+        assertThat(updatedDto.getProductTitle()).isEqualTo(UPDATED_PRODUCT_TITLE);
+        assertThat(updatedDto.getPriceUnit()).isEqualTo(UPDATED_PRICE);
+        assertThat(updatedDto.getQuantity()).isEqualTo(UPDATED_QUANTITY);
+    }
+```
+
+Test3:
+
+```plain
+    @Test
+    void deleteProductById_shouldRemoveProductFromDatabase() {
+        Product savedEntity = productRepository.saveAndFlush(product);
+        Integer productIdToDelete = savedEntity.getProductId();
+
+        assertThat(productRepository.findById(productIdToDelete)).isPresent();
+
+        productService.deleteById(productIdToDelete);
+
+        assertThat(productRepository.findById(productIdToDelete)).isNotPresent();
+    }
+```
+
+Test4:
+
+```plain
+    @Test
+    void findProductById_whenExists_shouldReturnProduct() {
+        Product savedEntity = productRepository.saveAndFlush(product);
+        Integer productIdToFind = savedEntity.getProductId();
+
+        ProductDto foundDto = productService.findById(productIdToFind);
+
+        assertThat(foundDto).isNotNull();
+        assertThat(foundDto.getProductId()).isEqualTo(productIdToFind);
+        assertThat(foundDto.getProductTitle()).isEqualTo(DEFAULT_PRODUCT_TITLE);
+        assertThat(foundDto.getSku()).isEqualTo(DEFAULT_SKU);
+    }
+```
+
+Test5:
+
+```plain
+    @Test
+    void findAll_shouldReturnAllProducts() {
+        productRepository.saveAndFlush(product); // Product 1        
+        Category category2 = Category.builder()
+                .categoryTitle("Accessories")
+                .imageUrl("http://example.com/accessories.jpg")
+                .build();
+        category2 = categoryRepository.save(category2);
+
+        Product product2 = Product.builder()
+                .productTitle("Gaming Mouse")
+                .imageUrl("http://example.com/mouse.jpg")
+                .sku("MOU-2023-001")
+                .priceUnit(79.99)
+                .quantity(100)
+                .category(category2)
+                .build();
+
+        productRepository.saveAndFlush(product2); // Product 2
+
+        List<ProductDto> products = productService.findAll();
+
+        assertThat(products).isNotNull();
+        assertThat(products.size()).isEqualTo(2);
+        assertThat(products.stream().anyMatch(p -> p.getProductTitle().equals(DEFAULT_PRODUCT_TITLE))).isTrue();
+        assertThat(products.stream().anyMatch(p -> p.getProductTitle().equals("Gaming Mouse"))).isTrue();
+    }
+```
+
+  
+
+Los resultados fueron:
+
+```plain
+.\mvnw -Dtest=ProductServiceIntegrationTests test
+```
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/718fbcba-deba-4ef3-9af0-461a2a3b6112/image.png)
+
+  
+
+### Pruebas End2End
+
+Para las pruebas End to End creamos una colección en Postman con el fluj completo de la aplicación, de forma que podamos ver que esté funcionando todo en conjnto.
+
+  
+
+La colección es:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/5cd757d5-45e4-4d8b-8495-10ee099a2add/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/05af3cc6-f37c-4eca-8cfb-871290ff93a9/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/d0347a8b-14fb-4e60-a840-64b2473817bf/image.png)
+
+  
+
+El resultado de las pruebas fue:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/05d7eadc-abd0-4047-9193-608089150cce/image.png)
+
+  
+
+### Pruebas de estrés
+
+Para la ejecución de las pruebas de estrés, usamos Locust:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/adb5f1fa-1249-40c8-b804-c3efa4a06a57/image.png)
+
+  
+
+Los charts nos indican el desempeño de la aplicación:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/a1724272-3fe3-4b32-aa92-2fb420cd23d1/image.png)![](https://t9013833367.p.clickup-attachments.com/t9013833367/edb1e91e-9efe-404d-92cb-a568bd73cbaa/image.png)
+
+  
+
+## Punto 4: Pipeline de stage
+
+En este punto, esencialmente, debemos repetir lo que hicimos con el pipeline de `dev`, pues ese ya estaba haciendo el despliegue en un ambiente.
+
+Para esto, reusamos la lógica del pipeline mencionado, y lo modificamos un poco:
+
+```yaml
+pipeline {
+    agent any
+
+    environment {
+        RESOURCE_GROUP = 'ecommerce-rg'
+        AKS_NAME = 'ecommerce-aks'
+        K8S_NAMESPACE = 'stage'
+    }
+
+    stages {
+
+        stage('Login to Azure') {
+            steps {
+                withCredentials([azureServicePrincipal('azure-credentials')]) {
+                    sh '''
+                        echo "Logging into Azure CLI..."
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account show
+                    '''
+                }
+            }
+        }
+
+        stage('Login to Docker') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                echo 'Running unit tests...'
+                sh './mvnw test'
+            }
+        }
+
+        stage('Configure AKS Credentials') {
+            steps {
+                sh '''
+                    az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_NAME" --overwrite-existing
+                '''
+            }
+        }
+
+        stage('Ensure Namespace Exists') {
+            steps {
+                sh '''
+                    pwd
+                    ls -la
+                    ls -la k8s
+                    ls -la k8s/stage
+                    kubectl apply -f k8s/"$K8S_NAMESPACE"/namespace.yml
+                '''
+            }
+        }
+
+        stage('Deploy Service Discovery') {
+            steps {
+                sh '''
+                    kubectl apply -f k8s/"$K8S_NAMESPACE"/service-discovery-deployment.yml -n "$K8S_NAMESPACE"
+                    kubectl wait --for=condition=Available deployment/service-discovery --timeout=300s -n "$K8S_NAMESPACE"
+                '''
+            }
+        }
+
+        stage('Deploy Core Services') {
+            steps {
+                sh 'kubectl apply -f k8s/core/ -n "$K8S_NAMESPACE"'
+            }
+        }
+
+        stage('Deploy Remaining Dev Services') {
+            steps {
+                sh '''
+                    for file in k8s/"$K8S_NAMESPACE"/*.yml; do
+                        case "$file" in
+                            *service-discovery-deployment.yml)
+                                echo "Skipping $file..."
+                                ;;
+                            *)
+                                echo "Applying $file..."
+                                kubectl apply -f "$file" -n "$K8S_NAMESPACE"
+                                ;;
+                        esac
+                    done
+                '''
+            }
+        }
+
+
+        stage('Wait for All Deployments') {
+            steps {
+                sh '''
+                    echo "Waiting for all deployments to become ready..."
+                    for deployment in $(kubectl get deployments -n "$K8S_NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+                        echo "Waiting for $deployment..."
+                        kubectl wait --for=condition=Available deployment/"$deployment" --timeout=300s -n "$K8S_NAMESPACE" || {
+                            echo "Deployment $deployment failed."
+                            exit 1
+                        }
+                    done
+                '''
+            }
+        }
+
+        stage('Run Newman Integration Tests') {
+            steps {
+                sh '''
+                    echo "Waiting for 2 minutes before starting Newman integration tests..."
+                    sleep 120
+                    kubectl apply -f k8s/newman/newman-job.yml -n "$K8S_NAMESPACE"
+                    kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n "$K8S_NAMESPACE" || {
+                        echo "Newman tests failed or timed out."
+                        exit 1
+                    }
+
+                    NEWMAN_POD=$(kubectl get pods -n "$K8S_NAMESPACE" -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+                    if [ -n "$NEWMAN_POD" ]; then
+                        echo "Fetching Newman test logs..."
+                        kubectl logs "$NEWMAN_POD" -n "$K8S_NAMESPACE"
+                    else
+                        echo "Newman pod not found."
+                    fi
+                '''
+            }
+        }
+
+        stage('Clean Up Newman Job') {
+            steps {
+                sh 'kubectl delete job newman-integration-tests -n "$K8S_NAMESPACE" || true'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            deleteDir()
+        }
+
+        success {
+            echo '✅ Deployment and integration tests completed successfully.'
+        }
+
+        failure {
+            echo '❌ Pipeline failed. Check logs above.'
+        }
+    }
+}
+
+
+```
+
+  
+
+## Punto 5: Pipeline de master
+
+Para este punto también usaremos de referencia los pipelines que usamos en los anteriores putos. Sin embargo, acá agregamos varios cambios para hacer el pipeline más robusto.
+
+Así quedó:
+
+```yaml
+pipeline {
+    agent any
+
+    environment {
+        RESOURCE_GROUP = 'ecommerce-rg'
+        AKS_NAME = 'ecommerce-aks'
+        K8S_NAMESPACE = 'master'
+        VERSION = sh(script: 'git describe --tags --always', returnStdout: true).trim()
+        DOCKER_REGISTRY = 'your-registry.io'
+    }
+
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    currentBuild.displayName = "#${BUILD_NUMBER} - ${VERSION}"
+                }
+            }
+        }
+
+        stage('Checkout & Setup') {
+            steps {
+                checkout scm
+                sh 'git fetch --tags'
+            }
+        }
+
+        stage('Login to Azure') {
+            steps {
+                withCredentials([azureServicePrincipal('azure-credentials')]) {
+                    sh '''
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account show
+                    '''
+                }
+            }
+        }
+
+        stage('Login to Docker') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin $DOCKER_REGISTRY
+                    '''
+                }
+            }
+        }
+
+        stage('Build & Unit Tests') {
+            steps {
+                sh './mvnw clean package'
+                junit '**/target/surefire-reports/*.xml'
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    def services = ['service1', 'service2', 'service3'] // Reemplazar con tus microservicios
+                    services.each { service ->
+                        sh """
+                            docker build -t $DOCKER_REGISTRY/${service}:${VERSION} -f ${service}/Dockerfile ${service}/
+                            docker push $DOCKER_REGISTRY/${service}:${VERSION}
+                        """
                     }
                 }
             }
-        },
-        "diskSpace": {
-            "status": "UP",
-            "details": {
-                "total": 981889826816,
-                "free": 325116776448,
-                "threshold": 10485760,
-                "exists": true
+        }
+
+        stage('Generate Release Notes') {
+            steps {
+                script {
+                    def changelog = sh(script: 'git log --pretty=format:"%h - %an, %ar : %s" --since="1 week ago"', returnStdout: true).trim()
+                    def releaseNotes = """
+                    Release ${VERSION} - ${new Date().format('yyyy-MM-dd')}
+                    =====================================
+                    
+                    Changes:
+                    ${changelog}
+                    
+                    Deployment Notes:
+                    - Kubernetes Namespace: ${K8S_NAMESPACE}
+                    - Cluster: ${AKS_NAME}
+                    - Version: ${VERSION}
+                    """
+                    writeFile file: 'RELEASE_NOTES.md', text: releaseNotes
+                    archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
+                }
             }
-        },
-        "ping": {
-            "status": "UP"
-        },
-        "refreshScope": {
-            "status": "UP"
+        }
+
+        stage('Configure Kubernetes') {
+            steps {
+                sh """
+                    az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_NAME" --overwrite-existing
+                    kubectl apply -f k8s/master/namespace.yml
+                """
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    def services = ['user-service', 'product-service', 'order-service', 'payment-service', 'favourite-service', 'shipping-service']
+                    services.each { service ->
+                        sh """
+                            kubectl apply -f k8s/master/${service}-deployment.yml -n $K8S_NAMESPACE
+                            kubectl set image deployment/${service} ${service}=$DOCKER_REGISTRY/${service}:${VERSION} -n $K8S_NAMESPACE
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('System Tests') {
+            steps {
+                sh """
+                    kubectl apply -f k8s/newman/newman-job.yml -n $K8S_NAMESPACE
+                    kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n $K8S_NAMESPACE || {
+                        echo "System tests failed"
+                        exit 1
+                    }
+                    
+                    NEWMAN_POD=$(kubectl get pods -n $K8S_NAMESPACE -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+                    kubectl logs $NEWMAN_POD -n $K8S_NAMESPACE > newman-logs.txt
+                """
+                archiveArtifacts artifacts: 'newman-logs.txt', fingerprint: true
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh """
+                    for deployment in $(kubectl get deployments -n $K8S_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+                        kubectl rollout status deployment/$deployment -n $K8S_NAMESPACE --timeout=300s
+                    done
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Limpieza
+                sh 'kubectl delete job newman-integration-tests -n $K8S_NAMESPACE || true'
+                
+                // Notificación
+                if (currentBuild.result == 'SUCCESS') {
+                    emailext subject: "SUCCESS: Pipeline ${currentBuild.fullDisplayName}",
+                            body: "Deployment to master completed successfully.\n\n${readFile('RELEASE_NOTES.md')}",
+                            to: 'devops-team@yourcompany.com'
+                } else {
+                    emailext subject: "FAILED: Pipeline ${currentBuild.fullDisplayName}",
+                            body: "Pipeline failed. Please check: ${BUILD_URL}",
+                            to: 'devops-team@yourcompany.com'
+                }
+            }
+            deleteDir()
         }
     }
 }
 ```
-### Testing Them All
-Now it's time to test all the application functionality as one part. To do so just run
- the following automation test script:
 
-```bash
-selim@:~/ecommerce-microservice-backend-app$ ./test-em-all.sh start
+  
+
+* * *
+
+# Notas: Proyecto final
+
+Esta sección incluye la documentación del proyecto final, y los puntos solicitados en el enunciado.
+
+  
+
+## Punto 1: Metodología Ágil y Estrategia de Branching
+
+### Metodología y sistema de gestión
+
+Para el desarrollo del proyecto, usaremos una metodología tipo **Kanban**, en donde nos serviremos del tablero clásico de esta metodología para organizar las tareas en las que nos encontramos trabajando.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/9699afa8-ebfa-4ceb-94ce-afc07cb0ede1/image.png)
+
+  
+
+### Estrategia de branching
+
+Para la parte de desarrollo vamos a usar GitFlow. La razón de esto es que es una estrategia de branching bastante clara y estructurada, compatible y muy usada en enfoques ágiles.
+
+Por esto mismo, muchos desarrolladores ya la conocen y se sienten cómodos con ella. Esto sirve para saltarnos un posible paso de adecuación que puede ser muy engorroso.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/7d719130-5232-4a40-90fc-fa75382688bc/image.png)
+
+**Main:** la rama de producción.
+
+**Develop:** la rama de integración.
+
+**Feature:** ramas de desarrollo de nuevas funcionalidades.
+
+El flujo básico consiste en:
+
+*   Crear rama desde `develop`: `git checkout -b feature/login`.
+*   Desarrollar la funcionalidad.
+*   Hacer PR hacia `develop`.
+*   Una vez aprobado y probado, `develop` se puede fusionar en `main` para despliegue.
+
+  
+  
+  
+
+Para esta parte vamos a usar una estrategia similar a Gitflow pero que se llama **Trunk-Based Development**. Acá se puede encontrar un [artículo](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development) con más info.
+
+Este branching es re básico. Consiste en hacer cambios continuos a una rama "trunk" desde ramas de vida corta de feat:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/0109c442-9a7b-4722-82f1-fde8fa90ccf2/image.png)
+
+Las ramas van a tener el prefijo de `infra/*` .
+
+Para esto, además, hay que tener varios entornos, de forma que se puedan hacer las pruebas:
+
+```plain
+/infra
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── environments/
+│   ├── test/
+│   │   └── terraform.tfvars
+│   └── prod/
+│       └── terraform.tfvars
 ```
-> You can use `stop` switch with `start`, that will 
->1. start docker, 
->2. run the tests, 
->3. stop the docker instances.
 
-The result will look like this:
+> Cada entorno usa las mismas configuraciones base, pero distintos valores (número de nodos, nombres, SKU de Redis, etc.).
 
-```bash
-Starting 'ecommerce-microservice-backend-app' for [Blackbox] testing...
+El flujo básico consiste en:
 
-Start Tests: Tue, May 31, 2020 2:09:36 AM
-HOST=localhost
-PORT=8080
-Restarting the test environment...
-$ docker-compose -p -f compose.yml down --remove-orphans
-$ docker-compose -p -f compose.yml up -d
-Wait for: curl -k https://localhost:8080/actuator/health... , retry #1 , retry #2, {"status":"UP"} DONE, continues...
-Test OK (HTTP Code: 200)
-...
-Test OK (actual value: 1)
-Test OK (actual value: 3)
-Test OK (actual value: 3)
-Test OK (HTTP Code: 404, {"httpStatus":"NOT_FOUND","message":"No product found for productId: 13","path":"/app/api/products/20","time":"2020-04-12@12:34:25.144+0000"})
-...
-Test OK (actual value: 3)
-Test OK (actual value: 0)
-Test OK (HTTP Code: 422, {"httpStatus":"UNPROCESSABLE_ENTITY","message":"Invalid productId: -1","path":"/app/api/products/-1","time":"2020-04-12@12:34:26.243+0000"})
-Test OK (actual value: "Invalid productId: -1")
-Test OK (HTTP Code: 400, {"timestamp":"2020-04-12T12:34:26.471+00:00","path":"/app/api/products/invalidProductId","status":400,"error":"Bad Request","message":"Type mismatch.","requestId":"044dcdf2-13"})
-Test OK (actual value: "Type mismatch.")
-Test OK (HTTP Code: 401, )
-Test OK (HTTP Code: 200)
-Test OK (HTTP Code: 403, )
-Start Circuit Breaker tests!
-Test OK (actual value: CLOSED)
-Test OK (HTTP Code: 500, {"timestamp":"2020-05-26T00:09:48.784+00:00","path":"/app/api/products/2","status":500,"error":"Internal Server Error","message":"Did not observe any item or terminal signal within 2000ms in 'onErrorResume' (and no fallback has been configured)","requestId":"4aa9f5e8-119"})
-...
-Test OK (actual value: Did not observe any item or terminal signal within 2000ms)
-Test OK (HTTP Code: 200)
-Test OK (actual value: Fallback product2)
-Test OK (HTTP Code: 200)
-Test OK (actual value: Fallback product2)
-Test OK (HTTP Code: 404, {"httpStatus":"NOT_FOUND","message":"Product Id: 14 not found in fallback cache!","path":"/app/api/products/14","timestamp":"2020-05-26@00:09:53.998+0000"})
-...
-Test OK (actual value: product name C)
-Test OK (actual value: CLOSED)
-Test OK (actual value: CLOSED_TO_OPEN)
-Test OK (actual value: OPEN_TO_HALF_OPEN)
-Test OK (actual value: HALF_OPEN_TO_CLOSED)
-End, all tests OK: Tue, May 31, 2020 2:10:09 AM
+*   Operaciones crea una nueva rama: `infra/feat-upgrade-acr` desde `infra/dev`.
+*   Cambia un recurso (por ejemplo, cambia el SKU de ACR o agrega un NSG).
+*   Ejecuta Terraform en el entorno de `test`:
+
+```plain
+terraform plan -var-file=environments/dev/terraform.tfvars
+terraform apply -var-file=environments/dev/terraform.tfvars
 ```
-### Tracking the services with Zipkin
-Now, you can now track Microservices interactions throughout Zipkin UI from the following link:
-[http://localhost:9411/zipkin/](http://localhost:9411/zipkin/)
-![Zipkin UI](zipkin-dash.png)
 
-### Closing The Story
+*   Verifica que todo funcione.
+*   Si todo es correcto, hace PR a `infra/main`.
+*   Ejecuta `terraform apply` con el archivo de producción:
 
-Finally, to close the story, we need to shut down Microservices manually service by service, hahaha just kidding, run the following command to shut them all:
-
-```bash
-selim@:~/ecommerce-microservice-backend-app$ docker-compose -f compose.yml down --remove-orphans
+```plain
+terraform apply -var-file=environments/prod/terraform.tfvars
 ```
- And you should see output like the following:
 
-```bash
-Removing ecommerce-microservice-backend-app_payment-service-container_1   ... done
-Removing ecommerce-microservice-backend-app_zipkin-container_1            ... done
-Removing ecommerce-microservice-backend-app_service-discovery-container_1 ... done
-Removing ecommerce-microservice-backend-app_product-service-container_1   ... done
-Removing ecommerce-microservice-backend-app_cloud-config-container_1      ... done
-Removing ecommerce-microservice-backend-app_proxy-client-container_1      ... done
-Removing ecommerce-microservice-backend-app_order-service-container_1     ... done
-Removing ecommerce-microservice-backend-app_user-service-container_1      ... done
-Removing ecommerce-microservice-backend-app_shipping-service-container_1  ... done
-Removing ecommerce-microservice-backend-app_api-gateway-container_1       ... done
-Removing ecommerce-microservice-backend-app_favourite-service-container_1 ... done
-Removing network ecommerce-microservice-backend-app_default
+Hay que aclarar que lo mejor sería tener repos separados: uno para el código y el otro para la infra. Como no se puede en este taller, entonces se va a usar la misma main para infra y para desarrollo.
+
+  
+
+## Punto 2: Infraestructura como Código con Terraform
+
+### Infraestructura implementada
+
+Para el desarrollo del proyecto, se ha implementado toda la infraestructura en Terraform, para hacer un despliegue usando Azure. En esta, se han configurado 3 ambientes: `dev`, `stage` y `prod`.
+
+  
+
+La infraestructura implementada está compuesta por:
+
+*   Un Resource Group.
+*   Una Virtual Network.
+*   Una Subnet.
+*   Un Azure Kubernetes Service (AKS) que es el clúster que contiene todos los microservicios desplegados.
+
+La siguiente imagen es una representación visual de la infraestructura mencionada. Para cada ambiente es, esencialmente, la misma:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/88591204-473d-4661-9f6a-80ba3776616b/image.png)
+
+  
+
+Además de esto, se ha realizado la configuración para el **backend remoto** en **Azure Storage,** de la siguiente manera:
+
+```yaml
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "ecommerceinfrastrgaccyul"
+    container_name       = "tfstate"
+    key                  = "dev.terraform.tfstate"
+  }
+}
 ```
-### The End
-In the end, I hope you enjoyed the application and find it useful, as I did when I was developing it. 
-If you would like to enhance, please: 
-- **Open PRs**, 
-- Give **feedback**, 
-- Add **new suggestions**, and
-- Finally, give it a 🌟.
 
-*Happy Coding ...* 🙂
+  
+
+### Costos de la infraestructura
+
+Para realizar el cálculo de los costos de nuestra infra, usaremos la [calculadora de costos de Azure](https://azure.microsoft.com/en-us/pricing/calculator/?cdn=disable). Para cada recurso, asumimos el mínimo de tráfico y consumo dado el alcance del proyecto.
+
+  
+
+Para el AKS obtuvimos:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/8a1ee8a0-8a47-4a36-a2aa-e66f75c321f1/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/ccf79337-ec19-4493-9847-e23aba1f03c5/image.png)
+
+Obtuvimos un costo estimado de ~133 USD mensuales por el clúster.
+
+  
+
+Para la Storage Account (el backend remoto), obtuvimos que:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/34ad95c5-9c3f-4a8a-b18d-1dc0c9ebdc9b/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/e5f5c615-fe01-4929-b946-f1fe20b8b8d3/image.png)
+
+Obtuvimos un costo estimado de ~21 USD mensuales por la Storage Account.
+
+  
+
+La VNet se cobra por la cantidad de uso, por lo que supusimos el uso mínimo y obtuvimos esto:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/c7ced4ab-dd44-42fa-b8f5-ebe3a3db2cf3/image.png)
+
+  
+
+Con esto, llegamos a un costo total estimado de **154.68 USD mensuales** por tener la infraestructura (de uno de nuestros entornos) en funcionamiento durante todos los días del mes.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/caafe22a-c946-462a-951c-b541fe9edffa/image.png)
+
+  
+
+Teniendo en cuenta que estamos manejando 3 entornos con las mismas especificaciones, tendríamos que triplicar ese resultado, obteniendo un **costo total de 464.04 USD mensuales**.
+
+  
+
+## Punto 3: Patrones de Diseño
+
+### Patrones de diseño usados en la arquitectura existente
+
+Para la identificación de los patrones de diseño presentes en la arquitectura que nos fue entregada en un inicio, decidimos explorar a fondo el repositorio y cada uno de sus microservicios.
+
+  
+
+#### API Gateway
+
+Con un primer vistazo, pudimos determinar que se está usando el patrón **API Gateway** que actúa como **único punto de entrada** para todos los otros microservicios. Esto, dada la presencia del servicio `api-gateway`.
+
+  
+
+#### Externalized Configuration
+
+Viendo los archivos de configuración como `application.yml` y `application-dev.yml` de servicios básicos como `user-service`, pudimos identificar el uso de varios patrones.
+
+  
+
+El patrón **Externalized Configuration**, que se puede identificar en este fragmento del `application.yml`:
+
+```yaml
+ spring:
+  config:
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://cloud-config:9296}
+```
+
+  
+
+Esto implica que la aplicación puede importar configuración desde un **servidor externo (Spring Cloud Config Server)**. Esto desacopla la configuración del código, permitiendo cambios sin redeploy.
+
+  
+
+#### Circuit Breaker
+
+También gracias al `application.yml` de los microservicios, identificamos el uso del patrón **Circuit Breaker**:
+
+```yaml
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        register-health-indicator: true
+        event-consumer-buffer-size: 10
+        automatic-transition-from-open-to-half-open-enabled: true
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-size: 10
+        wait-duration-in-open-state: 5s
+        sliding-window-type: COUNT_BASED
+```
+
+  
+
+Además de:
+
+```yaml
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+```
+
+  
+
+Se está usando **Resilience4j** para evitar que llamadas fallidas repetidas colapsen el sistema. Si una llamada falla muchas veces, se "abre el circuito" y evita nuevas llamadas por un tiempo.
+
+  
+
+#### Centralized Logging/Tracing
+
+Gracias al uso de Zipkin, identificamos el uso del patrón **Centralized Logging/Tracing**:
+
+```yaml
+spring:
+  zipkin:
+    base-url: ${SPRING_ZIPKIN_BASE_URL:http://zipkin:9411/}
+```
+
+  
+
+Este patrón implica que cada microservicio esté preparado para enviar sus logs a **Zipkin**, lo que los centraliza, y facilita la observabilidad de las solicitudes entre microservicios.
+
+  
+
+#### Profiles / Environment Separation
+
+Debido a cómo estamos manejando el proyecto, y la existencia de archivos de configuración para cada entorno, identificamos el uso del patrón **Profiles / Environment Separation**, que permite separar la configuración según ambientes (desarrollo, producción, test, etc.), y lograr que el sistema se comporte de forma distinta en función del entorno en el que se encuentre.
+
+  
+
+#### Service Discovery
+
+Sabemos que el proyecto usa Eureka, porque lo hemos estado trabajando por las últimas hermosas y para nada exasperantes semanas, pero también por la forma en que está configurado el `api-gateway`. Esto implica que el proyecto está implementando el patrón **Service Discovery**.
+
+  
+
+Este patrón permite que los microservicios **se registren automáticamente** en un servidor central (Eureka), y pueden **descubrir las direcciones de otros servicios** sin tenerlas hardcodeadas.
+
+  
+
+#### Health Check
+
+Aunque en el momento de entrega del código no hay archivos de deployment, algunos de los microservicios, como `order-service` o `shipping-service`, cuentan con endpoints que **pueden actuar como pruebas de vida (liveness probe),** como:
+
+```java
+@RestController
+class OrderController {
+	
+	@GetMapping
+	public String msg() {
+		return "Order controller responding!!";
+	}
+	
+}
+```
+
+  
+
+Esto nos indica que el proyecto está preparado para la implementación del patrón **Health Check**. Este patrón permite que kubernetes conozca el estado de estos servicios, y tome las acciones pertinentes.
+
+  
+
+### Patrones propios
+
+Para los patrones extra que debemos implementar, escogimos dos de resiliencia y uno de configuración. Esto, dado que los dos de resiliencia son complementarios.
+
+  
+
+| **Categoría** | **Patrón** | **Implementación** |
+| ---| ---| --- |
+| Resiliencia | Retry | `@Retry` + `fallback` + YML |
+| Configuración | Feature Toggle | `@ConditionalOnProperty` |
+| Resiliencia | Timeout | `@TimeLimiter` + YML |
+
+  
+
+#### **Resiliencia: Retry**
+
+El patrón **Retry** permite que una operación que falla (por ejemplo, por un error de red o timeout temporal) se vuelva a intentar automáticamente antes de lanzar una excepción. Esto mejora la resiliencia del sistema ante fallos transitorios.
+
+  
+
+Su **propósito** es evitar fallas inmediatas ante problemas temporales de conectividad entre microservicios, permitiendo que la operación tenga más oportunidades de completarse correctamente.
+
+  
+
+**Beneficios:**
+
+*   Mejora la resiliencia ante fallos de red o indisponibilidad momentánea.
+*   Reduce errores visibles al usuario final.
+*   Disminuye la necesidad de implementar lógica de reintento manual.
+
+  
+
+Para su implementación elegimos el endpoint `findAll()` del servicio `favourite-service` , ya uqe hace llamados a los servicios `user-service` y `product-service`. El método original:
+
+```java
+@Override
+public List<FavouriteDto> findAll() {
+	log.info("*** FavouriteDto List, service; fetch all favourites *");
+	return this.favouriteRepository.findAll()
+			.stream()
+				.map(FavouriteMappingHelper::map)
+				.map(f -> {
+					f.setUserDto(this.restTemplate
+							.getForObject(AppConstant.DiscoveredDomainsApi
+									.USER_SERVICE_API_URL + "/" + f.getUserId(), UserDto.class));
+					f.setProductDto(this.restTemplate
+							.getForObject(AppConstant.DiscoveredDomainsApi
+									.PRODUCT_SERVICE_API_URL + "/" + f.getProductId(), ProductDto.class));
+					return f;
+				})
+				.distinct()
+				.collect(Collectors.toUnmodifiableList());
+}
+```
+
+  
+
+Lo que hicimos fue extraer las llamadas REST a métodos separados, y aplicar la anotación `@Retry` con `Resilience4j`. Cada uno tiene su propio _fallback_ para manejar errores de forma controlada:
+
+```java
+@Retry(name = "userService", fallbackMethod = "fallbackUser")
+public UserDto getUserById(int userId) {
+	return this.restTemplate.getForObject(
+		AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + userId,
+		UserDto.class);
+}
+
+@Retry(name = "productService", fallbackMethod = "fallbackProduct")
+public ProductDto getProductById(int productId) {
+	return this.restTemplate.getForObject(
+		AppConstant.DiscoveredDomainsApi.PRODUCT_SERVICE_API_URL + "/" + productId,
+		ProductDto.class);
+}
+
+public UserDto fallbackUser(int userId, Exception e) {
+	log.warn("Fallo al obtener user {}", userId);
+	return null;
+}
+
+public ProductDto fallbackProduct(int productId, Exception e) {
+	log.warn("Fallo al obtener product {}", productId);
+	return null;
+}
+```
+
+  
+
+Además de eso, se realizó la configuración pertinente en el `application.yml` de este servicio. Agregamos este bloque:
+
+```yaml
+  retry:
+    instances:
+      userService:
+        max-attempts: 3
+        wait-duration: 1s
+      productService:
+        max-attempts: 3
+        wait-duration: 1s
+```
+
+  
+
+#### Configuración: Feature Toggle
+
+El patrón **Feature Toggle** permite habilitar o deshabilitar funcionalidades de manera dinámica a través de la configuración, sin necesidad de modificar el código o reiniciar la aplicación. Su **propósito** es **activar o desactivar** una funcionalidad experimental sin afectar al resto del sistema.
+
+  
+
+**Beneficios:**
+
+*   Permite desplegar nuevas funciones de forma progresiva.
+*   Aumenta la seguridad al poder desactivar código en producción sin reiniciar.
+*   Favorece la experimentación controlada y pruebas A/B.
+
+  
+
+Para implementar este patrón crearemos un nuevo controlador dentro del servicio `favourite-service`, que tendrá una funcionalidad experimental que deseamos probar de manera controlada, y tener la capacidad de activarla o desactivarla en el momento que deseemos.
+
+  
+
+La funcionalidad experimental consiste en traer todos los favoritos de un usuario, pero con el cambio de que le agrega un adjetivo aleatorio al inicio de cada producto:
+
+```java
+@RestController
+@RequestMapping("/api/v2/favourites")
+@Slf4j
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "feature.new-favourites", havingValue = "true")
+public class FavouriteV2Controller {
+
+    @Autowired
+    private FavouriteService service;
+
+    @GetMapping
+    public List<FavouriteDto> findAll() {
+        log.info("*** FavouriteDto List, controller V2; fetch all favourites *");
+
+        List<String> randomAdjectives = List.of("Amazing", "Wonderful", "Fantastic", "Incredible", "Awesome", "Spectacular", "Magnificent", "Stunning", "Breathtaking", "Remarkable");
+        return this.service.findAll()
+                .stream()
+                .map(favourite -> {
+                    favourite.getProductDto()
+                            .setProductTitle(randomAdjectives.get((int) (Math.random() * randomAdjectives.size())) + " "
+                                    + favourite.getProductDto().getProductTitle());
+                    return favourite;
+                })
+                .collect(Collectors.toList());
+    }
+}
+```
+
+  
+
+El interruptor para activar o desactivar dicha funcionalidad se agregó dentro del `application-dev.yml` del servicio:
+
+```yaml
+feature:
+  new-favourites: true
+```
+
+  
+
+#### Resiliencia: Timeout
+
+El patrón T**imeout** establece un **tiempo máximo** de espera para que una operación se complete. Si ese tiempo se supera, se **interrumpe** y lanza una excepción controlada, evitando que el hilo quede bloqueado indefinidamente.
+
+  
+
+Cumple el **propósito** de prevenir que llamadas a otros microservicios, como `user-service`, bloqueen hilos del sistema por demoras excesivas.
+
+  
+
+**Beneficios:**
+
+*   Protege la aplicación de cuelgues causados por servicios lentos o no disponibles.
+*   Libera recursos rápidamente en escenarios de fallo.
+*   Mejora la estabilidad y control de tiempos de respuesta.
+
+  
+
+Este patrón sirve para complementar el patrón **Retry** que configuramos antes. Por ende, haremos las modificaciones sobre los mismos métodos que usamos para dicho patrón:
+
+```java
+@TimeLimiter(name = "userService")
+@Retry(name = "userService", fallbackMethod = "fallbackUser")
+public UserDto getUserById(int userId) {
+	return this.restTemplate.getForObject(
+		AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + userId,
+		UserDto.class);
+}
+
+@TimeLimiter(name = "productService")
+@Retry(name = "productService", fallbackMethod = "fallbackProduct")
+public ProductDto getProductById(int productId) {
+	return this.restTemplate.getForObject(
+		AppConstant.DiscoveredDomainsApi.PRODUCT_SERVICE_API_URL + "/" + productId,
+		ProductDto.class);
+}
+```
+
+  
+
+La configuración que agregamos al application.yml es:
+
+```yaml
+  timelimiter:
+    instances:
+      userService:
+        timeout-duration: 2s
+        cancel-running-future: true
+      productService:
+        timeout-duration: 2s
+        cancel-running-future: true
+```
+
+  
+
+## Punto 4: CI/CD Avanzado
+
+Para el desarrollo del proyecto decidimos pasarnos a usar los pipelines de Azure Devops, ya que permiten una mayor facilidad de uso frente a Jenkins, que nos dio muchos problemas durante el desarrollo del Taller 2.
+
+  
+
+### Pipelines
+
+Se ha configurado un pipeline para el despliegue de la infraestructura:
+
+```yaml
+trigger:
+  branches:
+    include:
+      - main  # Adjust as needed
+
+parameters:
+  - name: environment
+    displayName: Environment to deploy
+    type: string
+    default: dev
+    values:
+      - dev
+      - stage
+      - prod
+
+pool:
+  name: my-machine
+
+variables:
+  TF_IN_AUTOMATION: true
+
+stages:
+  - stage: Deploy
+    displayName: Deploy ${{ parameters.environment }} environment
+    jobs:
+      - job: Terraform_Deployment
+        displayName: Terraform Deployment
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'azure-connection'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🔧 Initializing Terraform for ${{ parameters.environment }}..."
+                terraform init -backend-config="key=${{ parameters.environment }}.tfstate" .\envs\${{ parameters.environment }}
+
+                Write-Host "🔍 Validating Terraform for ${{ parameters.environment }}..."
+                terraform validate .\envs\${{ parameters.environment }}
+
+                Write-Host "🧠 Planning Terraform for ${{ parameters.environment }}..."
+                terraform plan -out=tfplan -input=false -var="env=${{ parameters.environment }}" .\envs\${{ parameters.environment }}
+
+                Write-Host "🚀 Applying Terraform plan for ${{ parameters.environment }}..."
+                terraform apply -input=false tfplan
+
+                Write-Host "✅ Deployment for ${{ parameters.environment }} completed!"
+            displayName: 'Run Terraform with PowerShell'
+```
+
+  
+
+### Ambientes separados
+
+Se han implementado ambientes `dev`, `stage` y `prod`. Esto se hizo mediante el código de terraform, en donde cada cada ambiente tiene sus propios recursos aislados de los demás.
+
+  
+
+### SonarQube
+
+  
+
+### Trivy
+
+### Versionado semántico automático
+
+Para el versionado semántico usamos la notación: `MAJOR.MINOR.PATCH`. Con esto en mente, configuramos el proyecto para que actualizar la versión automáticamente con base en los **commits:**
+
+*   `fix:` → incrementa `PATCH`
+*   `feat:` → incrementa `MINOR`
+*   `BREAKING CHANGE:` → incrementa `MAJOR`
+
+  
+
+Se configuró un pipeline automatizado en GitHub Actions para manejar el **versionado semántico** del proyecto de forma automática mediante la herramienta `semantic-release`. Este pipeline analiza los mensajes de commit y, si detecta cambios relevantes (según la convención [Conventional Commits](https://www.conventionalcommits.org)), genera automáticamente:
+
+*   Un nuevo número de versión (`major.minor.patch`)
+*   Un changelog actualizado ([`CHANGELOG.md`](http://CHANGELOG.md))
+*   Una publicación en la pestaña "Releases" de GitHub
+
+  
+
+Esto se ejecuta automáticamente al hacer push a las ramas `master` (releases estables) o `dev` (prereleases).
+
+  
+
+El pipeline es el siguiente:
+
+```yaml
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github -D
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+
+```
+
+  
+
+Y la configuración `.releaserc` es:
+
+```json
+{
+  "branches": [
+    "master",
+    { "name": "dev", "prerelease": true }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    "@semantic-release/github",
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["VERSION", "CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
+
+
+```
+
+  
+
+Para que el pipeline pueda cumplir con su función, es muy importante seguir las reglas de Conventional Commits para que el análisis semántico funcione correctamente.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/fc7a6b61-f1a5-4438-a2a9-8ff99eaec1e5/image.png)
+
+  
+
+### Notificaciones de falles automáticas
+
+El pipeline de despliegue de la infra se ha configurado para notificar su fallo por medio del correo:
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/36959b7c-fcc0-47bd-8718-c36b38e826d8/Imagen%20de%20WhatsApp%202025-06-13%20a%20las%2001.00.23_b647e474.jpg)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/5944f9fe-b2b8-4894-ad39-fef493f0c7f6/Imagen%20de%20WhatsApp%202025-06-13%20a%20las%2001.00.52_2eab242a.jpg)
+
+### Aprobaciones para despliegues a producción
+
+  
+
+## Punto 5: Pruebas Completas
+
+La implementación que realizamos de la pruebas unitarias, de integración, E2E, y de rendimiento se encuentran en la sección Punto 3: Pruebas de las notas del taller 2.
+
+  
+
+### Pruebas de seguridad
+
+  
+
+### Informes de cobertura y calidad de pruebas
+
+  
+
+### Ejecución automatizada en pipelines
+
+  
+
+## Punto 6: Change Management y Release Notes
+
+### Generación automática de Release Notes
+
+Se configuró `semantic-release` para generar automáticamente un changelog estructurado (release notes) en cada versión publicada. Esto se logró gracias al plugin `@semantic-release/release-notes-generator`, que forma parte del flujo de plugins definidos en el archivo `.releaserc`.
+
+  
+
+Además, con `@semantic-release/git`, este changelog se **agrega automáticamente** al archivo [`CHANGELOG.md`](http://CHANGELOG.md) y se **comitea en el repositorio**.
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/7e98b0f3-015d-4430-8705-754ddfe25421/image.png)
+
+![](https://t9013833367.p.clickup-attachments.com/t9013833367/21501f04-99d1-4923-9945-bc634876f750/image.png)
+
+  
+  
+
+## Punto 7: Observabilidad y Monitoreo
+
+  
+
+## Punto 8: Seguridad
+
+  
+
+## Punto 9: Documentación y Presentación

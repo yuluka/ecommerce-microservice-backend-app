@@ -1,0 +1,84 @@
+name: CI/CD to AKS
+
+on:
+  push:
+    branches:
+      - dev
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      K8S_NAMESPACE: dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Docker login
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Run unit tests
+        run: ./mvnw test
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl apply -f k8s/dev/namespace.yml
+
+      - name: Deploy Service Discovery
+        run: |
+          kubectl apply -f k8s/dev/service-discovery-deployment.yml -n $K8S_NAMESPACE
+          kubectl wait --for=condition=Available deployment/service-discovery --timeout=300s -n $K8S_NAMESPACE
+
+      - name: Deploy Core Services
+        run: |
+          kubectl apply -f k8s/core/ -n $K8S_NAMESPACE
+
+      - name: Deploy Remaining Dev Services
+        run: |
+          for file in k8s/dev/*.yml; do
+            if [[ "$file" == *service-discovery-deployment.yml ]]; then
+              echo "Skipping $file..."
+            else
+              echo "Applying $file..."
+              kubectl apply -f "$file" -n $K8S_NAMESPACE
+            fi
+          done
+
+      - name: Wait for All Deployments
+        run: |
+          echo "Waiting for all deployments to become ready..."
+          for deployment in $(kubectl get deployments -n $K8S_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Waiting for $deployment..."
+            kubectl wait --for=condition=Available deployment/$deployment --timeout=300s -n $K8S_NAMESPACE || {
+              echo "Deployment $deployment failed."
+              exit 1
+            }
+          done
+
+      - name: Run Newman Integration Tests
+        run: |
+          echo "Waiting for 5 minutes before starting Newman integration tests..."
+          sleep 300
+          kubectl apply -f k8s/newman/newman-job.yml -n $K8S_NAMESPACE
+          kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n $K8S_NAMESPACE || {
+            echo "Newman tests failed or timed out."
+            exit 1
+          }
+          NEWMAN_POD=$(kubectl get pods -n $K8S_NAMESPACE -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+          if [ -n "$NEWMAN_POD" ]; then
+            echo "Fetching Newman test logs..."
+            kubectl logs "$NEWMAN_POD" -n $K8S_NAMESPACE
+          else
+            echo "Newman pod not found."
+          fi
+
+      - name: Clean Up Newman Job
+        run: kubectl delete job newman-integration-tests -n $K8S_NAMESPACE || true

@@ -1,3 +1,4 @@
+
 server:
   port: 9296
 
@@ -12,13 +13,6 @@ spring:
         git:
           uri: https://github.com/SelimHorri/cloud-config-server
           clone-on-start: true
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://lamadrequemepario:8761/eureka}
-    register-with-eureka: true
-    fetch-registry: true
 
 resilience4j:
   circuitbreaker:
@@ -45,3 +39,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+
+
+
+
+
+
+

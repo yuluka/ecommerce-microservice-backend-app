@@ -1,24 +1,28 @@
+
 server:
   servlet:
     context-path: /user-service
 
 spring:
   zipkin:
-    base-url: ${SPRING_ZIPKIN_BASE_URL:http://localhost:9411/}
+    base-url: ${SPRING_ZIPKIN_BASE_URL:http://zipkin:9411/}
   config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:9296}
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://cloud-config:9296}
   application:
     name: USER-SERVICE
   profiles:
     active:
     - dev
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://lamadrequemepario:8761/eureka}
-    register-with-eureka: true
-    fetch-registry: true
+  datasource:
+    url: jdbc:h2:mem:ecommerce_dev_db
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 resilience4j:
   circuitbreaker:
@@ -41,3 +45,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+
+
+
+
+
+
+

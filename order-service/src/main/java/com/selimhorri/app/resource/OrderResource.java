@@ -29,11 +29,6 @@ public class OrderResource {
 	
 	private final OrderService orderService;
 	
-	@GetMapping("/health")
-	public ResponseEntity<String> health() {
-		return ResponseEntity.ok("Order Service is up and running!");
-	}
-
 	@GetMapping
 	public ResponseEntity<DtoCollectionResponse<OrderDto>> findAll() {
 		log.info("*** OrderDto List, controller; fetch all orders *");

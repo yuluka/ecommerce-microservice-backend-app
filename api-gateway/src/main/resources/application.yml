@@ -1,3 +1,4 @@
+
 server:
   servlet:
     context-path: /
@@ -12,14 +13,6 @@ spring:
   profiles:
     active:
     - dev
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://lamadrequemepario:8761/eureka}
-    register-with-eureka: true
-    fetch-registry: true
-
   cloud:
     gateway:
       default-filters:

@@ -1,19 +1,10 @@
+
 FROM openjdk:11
-
-# Parámetro de versión del jar
 ARG PROJECT_VERSION=0.1.0
-
-# Crear y usar directorio de trabajo
+RUN mkdir -p /home/app
 WORKDIR /home/app
+COPY target/cloud-config-v${PROJECT_VERSION}.jar cloud-config.jar
+EXPOSE 9296
+ENTRYPOINT ["java", "-jar", "cloud-config.jar"]
 
-ENV SPRING_PROFILES_ACTIVE=dev
 
-# Copiar el jar directamente
-ADD target/*.jar app.jar
-
-# Exponer puerto usado por el microservicio
-EXPOSE 8888
-
-# Comando de arranque
-# ENTRYPOINT ["java", "-jar", "cloud-config.jar"]
-ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "app.jar"]

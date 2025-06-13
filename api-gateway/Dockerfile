@@ -1,12 +1,11 @@
+
 FROM openjdk:11
-
+ARG PROJECT_VERSION=0.1.0
+RUN mkdir -p /home/app
 WORKDIR /home/app
-
-ENV SPRING_PROFILES_ACTIVE=dev
-
-# Copiar solo el JAR generado por Maven
-COPY target/*.jar app.jar
-
+ENV SPRING_PROFILES_ACTIVE dev
+COPY target/api-gateway-v${PROJECT_VERSION}.jar api-gateway.jar
 EXPOSE 8080
+ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "api-gateway.jar"]
 
-ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "app.jar"]
+

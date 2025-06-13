@@ -29,11 +29,6 @@ public class ProductResource {
 	
 	private final ProductService productService;
 	
-	@GetMapping("/health")
-	public ResponseEntity<String> health() {
-		return ResponseEntity.ok("Product Service is up and running!");
-	}
-
 	@GetMapping
 	public ResponseEntity<DtoCollectionResponse<ProductDto>> findAll() {
 		log.info("*** ProductDto List, controller; fetch all categories *");

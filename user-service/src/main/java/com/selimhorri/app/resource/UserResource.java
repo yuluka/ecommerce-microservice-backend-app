@@ -1,7 +1,5 @@
 package com.selimhorri.app.resource;
 
-import java.net.URI;
-
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -31,12 +29,6 @@ public class UserResource {
 	
 	private final UserService userService;
 	
-	@GetMapping("/health")
-	public ResponseEntity<String> health() {
-		log.info("*** String, resource; health check *");
-		return ResponseEntity.ok("User Service is up and running!");
-	}
-
 	@GetMapping
 	public ResponseEntity<DtoCollectionResponse<UserDto>> findAll() {
 		log.info("*** UserDto List, controller; fetch all users *");
@@ -52,30 +44,13 @@ public class UserResource {
 		return ResponseEntity.ok(this.userService.findById(Integer.parseInt(userId.strip())));
 	}
 	
-	// @PostMapping
-	// public ResponseEntity<UserDto> save(
-	// 		@RequestBody 
-	// 		@NotNull(message = "Input must not NULL") 
-	// 		@Valid final UserDto userDto) {
-	// 	log.info("*** UserDto, resource; save user *");
-	// 	return ResponseEntity.ok(this.userService.save(userDto));
-	// }
-
 	@PostMapping
 	public ResponseEntity<UserDto> save(
 			@RequestBody 
 			@NotNull(message = "Input must not NULL") 
 			@Valid final UserDto userDto) {
-		
 		log.info("*** UserDto, resource; save user *");
-		UserDto savedUser = this.userService.save(userDto);
-
-		// Opcional: construir URI del nuevo recurso
-		URI location = URI.create("/api/users/" + savedUser.getUserId());
-
-		return ResponseEntity
-				.created(location) // <-- esto devuelve 201
-				.body(savedUser);
+		return ResponseEntity.ok(this.userService.save(userDto));
 	}
 	
 	@PutMapping
