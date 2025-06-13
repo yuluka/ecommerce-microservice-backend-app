@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.0.0...v1.1.0) (2025-06-13)
+
+
+### Features
+
+* update deploy pipeline ([f7c7029](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/f7c702936c14b8c027b6b8a345d8623b8787db6c))
+
 # 1.0.0 (2025-06-13)
 
 
