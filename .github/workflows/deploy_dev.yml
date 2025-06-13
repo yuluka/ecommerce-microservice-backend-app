@@ -63,6 +63,17 @@ jobs:
             }
           done
 
+      - name: List Deployments, Pods and Services
+        run: |
+          echo "Deployments in namespace $K8S_NAMESPACE:"
+          kubectl get deployments -n $K8S_NAMESPACE
+
+          echo "Pods in namespace $K8S_NAMESPACE:"
+          kubectl get pods -n $K8S_NAMESPACE -o wide
+
+          echo "Services in namespace $K8S_NAMESPACE:"
+          kubectl get svc -n $K8S_NAMESPACE
+
       - name: Run Newman Integration Tests
         run: |
           echo "Waiting for 5 minutes before starting Newman integration tests..."
