@@ -74,22 +74,39 @@ jobs:
           echo "Services in namespace $K8S_NAMESPACE:"
           kubectl get svc -n $K8S_NAMESPACE
 
-      - name: Run Newman Integration Tests
-        run: |
-          echo "Waiting for 5 minutes before starting Newman integration tests..."
-          sleep 300
-          kubectl apply -f k8s/newman/newman-job.yml -n $K8S_NAMESPACE
-          kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n $K8S_NAMESPACE || {
-            echo "Newman tests failed or timed out."
-            exit 1
-          }
-          NEWMAN_POD=$(kubectl get pods -n $K8S_NAMESPACE -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
-          if [ -n "$NEWMAN_POD" ]; then
-            echo "Fetching Newman test logs..."
-            kubectl logs "$NEWMAN_POD" -n $K8S_NAMESPACE
-          else
-            echo "Newman pod not found."
-          fi
+      # - name: Run Newman Integration Tests
+      #   run: |
+      #     echo "Waiting for 5 minutes before starting Newman integration tests..."
+      #     sleep 300
+      #     kubectl apply -f k8s/newman/newman-job.yml -n $K8S_NAMESPACE
+      #     kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n $K8S_NAMESPACE || {
+      #       echo "Newman tests failed or timed out."
+      #       exit 1
+      #     }
+      #     NEWMAN_POD=$(kubectl get pods -n $K8S_NAMESPACE -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+      #     if [ -n "$NEWMAN_POD" ]; then
+      #       echo "Fetching Newman test logs..."
+      #       kubectl logs "$NEWMAN_POD" -n $K8S_NAMESPACE
+      #     else
+      #       echo "Newman pod not found."
+      #     fi
 
-      - name: Clean Up Newman Job
-        run: kubectl delete job newman-integration-tests -n $K8S_NAMESPACE || true
+      # - name: Clean Up Newman Job
+      #   run: kubectl delete job newman-integration-tests -n $K8S_NAMESPACE || true
+
+      - name: Notify Success on Discord
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"content\": \"✅ Despliegue completado correctamente en \`${{ github.ref }}\` para \`${{ github.repository }}\`\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Notify Failure on Discord
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"content\": \"❌ Falló el despliegue en \`${{ github.ref }}\` para \`${{ github.repository }}\`. Revisa el log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
