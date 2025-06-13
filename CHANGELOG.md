@@ -1,3 +1,10 @@
+# [1.1.0-dev.7](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.6...v1.1.0-dev.7) (2025-06-13)
+
+
+### Features
+
+* add image push ([0bccc8b](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/0bccc8b717f48fcba7aac0409c66f64814e4be2c))
+
 # [1.1.0-dev.6](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2025-06-13)
 
 
