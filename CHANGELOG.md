@@ -1,3 +1,10 @@
+# [1.1.0-dev.10](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.9...v1.1.0-dev.10) (2025-06-13)
+
+
+### Features
+
+* add pipelines for prod and stage ([e10b5de](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/e10b5de10df4a3b061df3d220b5343b14bd8f074))
+
 # [1.1.0-dev.9](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.8...v1.1.0-dev.9) (2025-06-13)
 
 
