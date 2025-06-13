@@ -37,8 +37,8 @@ jobs:
       - name: Scan Docker image with Trivy
         run: |
           IMAGES=(
-            "${{ secrets.DOCKER_USERNAME }}/service-discovery:latest"
-            "${{ secrets.DOCKER_USERNAME }}/user-service:latest"
+            "jpnino/service-discovery:latest"
+            "jpnino/user-service:latest"
           )
           for IMAGE in "${IMAGES[@]}"; do
             echo "🔎 Escaneando imagen $IMAGE..."
