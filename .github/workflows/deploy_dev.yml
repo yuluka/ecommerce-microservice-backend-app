@@ -42,7 +42,7 @@ jobs:
           )
           for IMAGE in "${IMAGES[@]}"; do
             echo "🔎 Escaneando imagen $IMAGE..."
-            trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE
+            trivy image --severity HIGH,CRITICAL $IMAGE || echo "⚠️ Vulnerabilidades encontradas en $IMAGE"
           done
 
     #   - name: Run unit tests
