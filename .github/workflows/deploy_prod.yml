@@ -1,0 +1,165 @@
+name: CI/CD to AKS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      K8S_NAMESPACE: prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # - name: Docker login
+      #   run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build JAR with Maven
+        run: |
+          for dir in */; do
+            if [ -f "$dir/pom.xml" ]; then
+              echo "🔨 Compilando $dir..."
+              mvn -f "$dir/pom.xml" clean package -DskipTests
+            fi
+          done
+
+      - name: Build & Push Docker Images
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "🔐 Loggeando en Docker Hub..."
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+          echo "🔍 Buscando servicios con Dockerfile..."
+          IGNORED_DIRS=".github .mvn jenkins k8s performance-tests src"
+          SERVICES=$(find . -maxdepth 1 -type d \( $(printf "! -name %s " $IGNORED_DIRS) \) -exec test -f "{}/Dockerfile" \; -print | sed 's|^./||')
+
+          for SERVICE in $SERVICES; do
+            IMAGE_TAG="$DOCKER_USERNAME/$SERVICE:latest"
+            echo "📦 Construyendo y pusheando imagen $IMAGE_TAG..."
+            docker build -t "$IMAGE_TAG" "./$SERVICE"
+            docker push "$IMAGE_TAG"
+          done
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Scan Docker image with Trivy
+        run: |
+          IMAGES=(
+            "raskolnikov999/api-gateway:latest"
+            "raskolnikov999/service-discovery:latest"
+            "raskolnikov999/user-service:latest"
+            "raskolnikov999/product-service:latest"
+            "raskolnikov999/order-service:latest"
+            "raskolnikov999/favourite-service:latest"
+            "raskolnikov999/shipping-service:latest"
+            "raskolnikov999/payment-service:latest"
+          )
+          for IMAGE in "${IMAGES[@]}"; do
+            echo "🔎 Escaneando imagen $IMAGE..."
+            trivy image --severity HIGH,CRITICAL $IMAGE || echo "⚠️ Vulnerabilidades encontradas en $IMAGE"
+          done
+
+    #   - name: Run unit tests
+    #     run: ./mvnw test
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl apply -f k8s/prod/namespace.yml
+
+      - name: Deploy Service Discovery
+        run: |
+          kubectl apply -f k8s/prod/service-discovery-deployment.yml -n $K8S_NAMESPACE
+          kubectl wait --for=condition=Available deployment/service-discovery --timeout=300s -n $K8S_NAMESPACE
+
+      - name: Deploy Core Services
+        run: |
+          kubectl apply -f k8s/core/ -n $K8S_NAMESPACE
+
+      - name: Deploy Remaining Dev Services
+        run: |
+          for file in k8s/prod/*.yml; do
+            if [[ "$file" == *service-discovery-deployment.yml ]]; then
+              echo "Skipping $file..."
+            else
+              echo "Applying $file..."
+              kubectl apply -f "$file" -n $K8S_NAMESPACE
+            fi
+          done
+
+      - name: Wait for All Deployments
+        run: |
+          echo "Waiting for all deployments to become ready..."
+          for deployment in $(kubectl get deployments -n $K8S_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Waiting for $deployment..."
+            kubectl wait --for=condition=Available deployment/$deployment --timeout=300s -n $K8S_NAMESPACE || {
+              echo "Deployment $deployment failed."
+              exit 1
+            }
+          done
+
+      - name: List Deployments, Pods and Services
+        run: |
+          echo "Deployments in namespace $K8S_NAMESPACE:"
+          kubectl get deployments -n $K8S_NAMESPACE
+
+          echo "Pods in namespace $K8S_NAMESPACE:"
+          kubectl get pods -n $K8S_NAMESPACE -o wide
+
+          echo "Services in namespace $K8S_NAMESPACE:"
+          kubectl get svc -n $K8S_NAMESPACE
+
+      # - name: Run Newman Integration Tests
+      #   run: |
+      #     echo "Waiting for 5 minutes before starting Newman integration tests..."
+      #     sleep 300
+      #     kubectl apply -f k8s/newman/newman-job.yml -n $K8S_NAMESPACE
+      #     kubectl wait --for=condition=complete job/newman-integration-tests --timeout=300s -n $K8S_NAMESPACE || {
+      #       echo "Newman tests failed or timed out."
+      #       exit 1
+      #     }
+      #     NEWMAN_POD=$(kubectl get pods -n $K8S_NAMESPACE -l job-name=newman-integration-tests -o jsonpath='{.items[0].metadata.name}')
+      #     if [ -n "$NEWMAN_POD" ]; then
+      #       echo "Fetching Newman test logs..."
+      #       kubectl logs "$NEWMAN_POD" -n $K8S_NAMESPACE
+      #     else
+      #       echo "Newman pod not found."
+      #     fi
+
+      # - name: Clean Up Newman Job
+      #   run: kubectl delete job newman-integration-tests -n $K8S_NAMESPACE || true
+
+      - name: Notify Success on Discord
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"content\": \"✅ Despliegue completado correctamente en \`${{ github.ref }}\` para \`${{ github.repository }}\`\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Notify Failure on Discord
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"content\": \"❌ Falló el despliegue en \`${{ github.ref }}\` para \`${{ github.repository }}\`. Revisa el log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
