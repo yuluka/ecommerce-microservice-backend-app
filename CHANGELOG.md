@@ -1,3 +1,10 @@
+# [1.1.0-dev.6](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2025-06-13)
+
+
+### Features
+
+* add trivy ([b4da3b6](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/b4da3b66a1c017fcf5b951ed100599050436331d))
+
 # [1.1.0-dev.5](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.4...v1.1.0-dev.5) (2025-06-13)
 
 
