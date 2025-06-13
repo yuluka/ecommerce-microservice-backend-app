@@ -1,3 +1,10 @@
+# [1.1.0-dev.2](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2025-06-13)
+
+
+### Features
+
+* add discord notifications ([20b57e4](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/20b57e4f6044e79a41f66dee8236932f118510d1))
+
 # [1.1.0-dev.1](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.0.0...v1.1.0-dev.1) (2025-06-13)
 
 
