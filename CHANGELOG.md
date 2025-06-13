@@ -1,3 +1,10 @@
+# [1.1.0-dev.3](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2025-06-13)
+
+
+### Features
+
+* add experimental feature to user-service ([7fc2164](https://github.com/yuluka/ecommerce-microservice-backend-app/commit/7fc21641884ad6e6c6d11beedd6cbde7d31861a3))
+
 # [1.1.0-dev.2](https://github.com/yuluka/ecommerce-microservice-backend-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2025-06-13)
 
 
