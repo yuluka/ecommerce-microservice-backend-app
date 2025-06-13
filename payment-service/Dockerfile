@@ -5,6 +5,8 @@ RUN mkdir -p /home/app
 WORKDIR /home/app
 ENV SPRING_PROFILES_ACTIVE dev
 COPY target/payment-service-v${PROJECT_VERSION}.jar payment-service.jar
+COPY e2e-tests /home/app/e2e-tests
+RUN [ -d /home/app/e2e-tests ] && ls -l /home/app/e2e-tests || echo "⚠️  e2e-tests no existe"
 EXPOSE 8400
 ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "payment-service.jar"]
 
