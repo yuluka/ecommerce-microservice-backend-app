@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: favourite-service
-        image: jpnino/favourite-service:latest
+        image: raskolnikov999/favourite-service:latest
         ports:
         - containerPort: 8800
         env:

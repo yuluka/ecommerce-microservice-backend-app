@@ -6,7 +6,7 @@ pipeline {
         AKS_NAME = 'ecommerce-aks'
         K8S_NAMESPACE = 'prod'
         VERSION = sh(script: 'git describe --tags --always', returnStdout: true).trim()
-        DOCKER_REGISTRY = 'jpnino.io'
+        DOCKER_REGISTRY = 'raskolnikov999.io'
     }
 
     stages {

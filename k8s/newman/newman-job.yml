@@ -10,7 +10,7 @@ spec:
       restartPolicy: Never # Critical: Don't restart if tests fail
       containers:
         - name: newman
-          image: jpnino/newman:latest # Use your custom image here
+          image: raskolnikov999/newman:latest # Use your custom image here
           # command and args are now defined in the Dockerfile's ENTRYPOINT/CMD
           volumeMounts:
             - name: newman-reports

@@ -8,7 +8,7 @@
       - microservices_network 
 
   service-discovery-container: 
-    image: jpnino/service-discovery:latest
+    image: raskolnikov999/service-discovery:latest
     build:
       context: ./service-discovery
     ports: 
@@ -20,7 +20,7 @@
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
 
   cloud-config-container: 
-    image: jpnino/cloud-config:latest
+    image: raskolnikov999/cloud-config:latest
     build:
       context: ./cloud-config
     ports: 
@@ -35,7 +35,7 @@
       - EUREKA_CLIENT_SERVICEURL_MYZONE=http://service-discovery-container:8761/eureka 
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
   api-gateway-container: 
-    image: jpnino/api-gateway:latest 
+    image: raskolnikov999/api-gateway:latest 
     build:
       context: ./api-gateway
     ports: 
@@ -51,7 +51,7 @@
       - EUREKA_CLIENT_SERVICEURL_MYZONE=http://service-discovery-container:8761/eureka 
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
   proxy-client-container: 
-    image: jpnino/proxy-client:latest 
+    image: raskolnikov999/proxy-client:latest 
     build:
       context: ./proxy-client
     ports: 
@@ -67,7 +67,7 @@
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
   order-service-container: 
-    image: jpnino/order-service:latest 
+    image: raskolnikov999/order-service:latest 
     build:
       context: ./order-service
     ports: 
@@ -82,7 +82,7 @@
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
   payment-service-container: 
-    image: jpnino/payment-service:latest 
+    image: raskolnikov999/payment-service:latest 
     build:
       context: ./payment-service
     ports: 
@@ -98,7 +98,7 @@
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
   product-service-container: 
-    image: jpnino/product-service:latest 
+    image: raskolnikov999/product-service:latest 
     build:
       context: ./product-service
     ports: 
@@ -114,7 +114,7 @@
       - SPRING_ZIPKIN_BASE-URL=http://zipkin:9411 
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
   shipping-service-container: 
-    image: jpnino/shipping-service:latest 
+    image: raskolnikov999/shipping-service:latest 
     build:
       context: ./shipping-service
     networks: 
@@ -130,7 +130,7 @@
       - EUREKA_CLIENT_SERVICEURL_MYZONE=http://service-discovery-container:8761/eureka 
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
   user-service-container: 
-    image: jpnino/user-service:latest 
+    image: raskolnikov999/user-service:latest 
     build:
       context: ./user-service
     ports: 
@@ -146,7 +146,7 @@
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ 
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/ 
   favourite-service-container: 
-    image: jpnino/favourite-service:latest 
+    image: raskolnikov999/favourite-service:latest 
     build:
       context: ./favourite-service
     ports: 

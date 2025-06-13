@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: service-discovery
-        image: jpnino/service-discovery:latest
+        image: raskolnikov999/service-discovery:latest
         ports:
         - containerPort: 8761
         env:

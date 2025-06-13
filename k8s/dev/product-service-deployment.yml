@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: product-service
-        image: jpnino/product-service:latest
+        image: raskolnikov999/product-service:latest
         ports:
         - containerPort: 8500
         env:

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: cloud-config
-        image: jpnino/cloud-config:latest
+        image: raskolnikov999/cloud-config:latest
         ports:
         - containerPort: 9296
         env:

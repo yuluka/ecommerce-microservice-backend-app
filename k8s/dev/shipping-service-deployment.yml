@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: shipping-service
-        image: jpnino/shipping-service:latest
+        image: raskolnikov999/shipping-service:latest
         ports:
         - containerPort: 8600
         env:

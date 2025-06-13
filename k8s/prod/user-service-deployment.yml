@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: jpnino/user-service:latest
+        image: raskolnikov999/user-service:latest
         ports:
         - containerPort: 8700
         env:

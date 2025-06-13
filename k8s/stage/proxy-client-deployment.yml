@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: proxy-client
-        image: jpnino/proxy-client:latest
+        image: raskolnikov999/proxy-client:latest
         ports:
         - containerPort: 8900
         env:

@@ -22,8 +22,27 @@ jobs:
           echo "${{ secrets.KUBECONFIG_DATA }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Docker login
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      # - name: Docker login
+      #   run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build & Push Docker Images
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "🔐 Loggeando en Docker Hub..."
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+          echo "🔍 Buscando servicios con Dockerfile..."
+          IGNORED_DIRS=".github .mvn jenkins k8s performance-tests src"
+          SERVICES=$(find . -maxdepth 1 -type d \( $(printf "! -name %s " $IGNORED_DIRS) \) -exec test -f "{}/Dockerfile" \; -print | sed 's|^./||')
+
+          for SERVICE in $SERVICES; do
+            IMAGE_TAG="$DOCKER_USERNAME/$SERVICE:latest"
+            echo "📦 Construyendo y pusheando imagen $IMAGE_TAG..."
+            docker build -t "$IMAGE_TAG" "./$SERVICE"
+            docker push "$IMAGE_TAG"
+          done
 
       - name: Install Trivy
         run: |
@@ -37,8 +56,14 @@ jobs:
       - name: Scan Docker image with Trivy
         run: |
           IMAGES=(
-            "jpnino/service-discovery:latest"
-            "jpnino/user-service:latest"
+            "raskolnikov999/api-gateway:latest"
+            "raskolnikov999/service-discovery:latest"
+            "raskolnikov999/user-service:latest"
+            "raskolnikov999/product-service:latest"
+            "raskolnikov999/order-service:latest"
+            "raskolnikov999/favourite-service:latest"
+            "raskolnikov999/shipping-service:latest"
+            "raskolnikov999/payment-service:latest"
           )
           for IMAGE in "${IMAGES[@]}"; do
             echo "🔎 Escaneando imagen $IMAGE..."
